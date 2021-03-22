@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference PrivateAssets="All" Include="..\Service.Bitgo.WithdrawalProcessor.Domain.Models\Service.Bitgo.WithdrawalProcessor.Domain.Models.csproj" />
+    <ProjectReference PrivateAssets="All" Include="..\Service.Bitgo.WithdrawalProcessor.Grpc\Service.Bitgo.WithdrawalProcessor.Grpc.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Core.Api" Version="2.36.1" />
+    <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.36.0" />
+    <PackageReference Include="MyJetWallet.Sdk.GrpcMetrics" Version="1.0.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />
+    <PackageReference Include="protobuf-net.Grpc" Version="1.0.152" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>
+      $(TargetsForTfmSpecificBuildOutput);PackReferencedProjectOutputs
+    </TargetsForTfmSpecificBuildOutput>
+    <PackageId>MyJetWallet.Service.Bitgo.WithdrawalProcessor.Client</PackageId>
+    <Authors>MyJetWallet</Authors>
+    <Company>MyJetWallet</Company>
+    <Product>MyJetWallet</Product>
+    <PackageProjectUrl>https://github.com/MyJetWallet/Service.Bitgo.WithdrawalProcessor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MyJetWallet/Service.Bitgo.WithdrawalProcessor</RepositoryUrl>
+  </PropertyGroup>
+
+  <Target Name="PackReferencedProjectOutputs" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

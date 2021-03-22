@@ -1,0 +1,33 @@
+name: Release API client nuget
+
+on:
+  push:
+    tags: "client-*"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.101
+        source-url: https://nuget.pkg.github.com/myjetwallet/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}  
+
+    - name: Build
+      run: dotnet build --configuration Release /p:AssemblyVersion=${GITHUB_REF#refs/tags/client-}
+
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+
+    - name: Create the package
+      run: dotnet pack --configuration Release src/Service.Bitgo.WithdrawalProcessor.Client /p:Version=${GITHUB_REF#refs/tags/client-}
+
+    - name: Publish the package to GPR
+      run: dotnet nuget push src/Service.Bitgo.WithdrawalProcessor.Client/bin/Release/*.nupkg -s "https://api.nuget.org/v3/index.json" -k ${{ secrets.NUGET_TOCKEN }}
+

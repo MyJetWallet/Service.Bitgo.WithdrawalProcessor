@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Net.Client" Version="2.36.0" />
+    <PackageReference Include="MyNoSqlServer.DataWriter" Version="1.3.1" />
+    <PackageReference Include="protobuf-net.Grpc" Version="1.0.152" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.Client\Service.Bitgo.WithdrawalProcessor.Client.csproj" />
+    <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.Grpc\Service.Bitgo.WithdrawalProcessor.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.NoSql\Service.Bitgo.WithdrawalProcessor.NoSql.csproj" />
+  </ItemGroup>
+
+</Project>
