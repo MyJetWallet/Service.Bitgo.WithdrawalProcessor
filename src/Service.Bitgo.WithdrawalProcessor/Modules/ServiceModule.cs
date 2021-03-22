@@ -1,12 +1,13 @@
 ﻿using Autofac;
 using MyJetWallet.BitGo;
+using MyJetWallet.BitGo.Settings.Ioc;
+using MyJetWallet.BitGo.Settings.NoSql;
+using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Sdk.Service;
 using MyNoSqlServer.Abstractions;
 using MyNoSqlServer.DataReader;
 using Service.AssetsDictionary.Client;
 using Service.BitGo.SignTransaction.Client;
-using Service.Bitgo.WithdrawalProcessor.NoSql;
-using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.ChangeBalanceGateway.Client;
 
 namespace Service.Bitgo.WithdrawalProcessor.Modules
@@ -37,25 +38,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
                 .As<IBitGoClient>()
                 .SingleInstance();
 
-            builder
-                .RegisterType<WalletMapper>()
-                .As<IWalletMapper>()
-                .SingleInstance();
-
-            builder
-                .RegisterType<AssetMapper>()
-                .As<IAssetMapper>()
-                .SingleInstance();
-
-            builder
-                .RegisterInstance(new MyNoSqlReadRepository<BitgoAssetMapEntity>(myNoSqlClient, BitgoAssetMapEntity.TableName))
-                .As<IMyNoSqlServerDataReader<BitgoAssetMapEntity>>()
-                .SingleInstance();
-
-            builder
-                .RegisterInstance(new MyNoSqlReadRepository<BitgoCoinEntity>(myNoSqlClient, BitgoCoinEntity.TableName))
-                .As<IMyNoSqlServerDataReader<BitgoCoinEntity>>()
-                .SingleInstance();
+            builder.RegisterBitgoSettingsReader(myNoSqlClient);
 
             builder.RegisterBitGoSignTransactionClient(Program.Settings.BitgoSignTransactionGrpcServiceUrl);
 

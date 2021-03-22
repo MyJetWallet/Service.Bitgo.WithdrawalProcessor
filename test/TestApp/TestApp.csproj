@@ -14,7 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.Client\Service.Bitgo.WithdrawalProcessor.Client.csproj" />
     <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.Grpc\Service.Bitgo.WithdrawalProcessor.Grpc.csproj" />
-    <ProjectReference Include="..\..\src\Service.Bitgo.WithdrawalProcessor.NoSql\Service.Bitgo.WithdrawalProcessor.NoSql.csproj" />
   </ItemGroup>
 
 </Project>

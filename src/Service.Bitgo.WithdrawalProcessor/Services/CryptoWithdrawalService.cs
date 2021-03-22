@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.BitGo;
+using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Domain.Transactions;
 using Newtonsoft.Json;
 using Service.BitGo.SignTransaction.Grpc;
@@ -18,17 +19,15 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly ILogger<CryptoWithdrawalService> _logger;
         private readonly IAssetMapper _assetMapper;
         private readonly IBitGoClient _bitGoClient;
-        private readonly IWalletMapper _walletMapper;
         private readonly ISpotChangeBalanceService _changeBalanceService;
         private readonly IPublishTransactionService _publishTransactionService;
 
-        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, IAssetMapper assetMapper, IBitGoClient bitGoClient, IWalletMapper walletMapper,
+        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, IAssetMapper assetMapper, IBitGoClient bitGoClient,
             ISpotChangeBalanceService changeBalanceService, IPublishTransactionService publishTransactionService)
         {
             _logger = logger;
             _assetMapper = assetMapper;
             _bitGoClient = bitGoClient;
-            _walletMapper = walletMapper;
             _changeBalanceService = changeBalanceService;
             _publishTransactionService = publishTransactionService;
         }
@@ -39,7 +38,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
             try
             {
-                var (coin, bitgoWallet) = _assetMapper.AssetToBitgoCoinAndWalletAsync(request.BrokerId, request.AssetSymbol);
+                var (coin, _) = _assetMapper.AssetToBitgoCoinAndWallet(request.BrokerId, request.AssetSymbol);
 
                 if (string.IsNullOrEmpty(coin))
                 {
@@ -90,7 +89,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
             try
             {
-                var (coin, bitgoWallet) = _assetMapper.AssetToBitgoCoinAndWalletAsync(request.BrokerId, request.AssetSymbol);
+                var (coin, bitgoWallet) = _assetMapper.AssetToBitgoCoinAndWallet(request.BrokerId, request.AssetSymbol);
 
                 if (string.IsNullOrEmpty(coin) || string.IsNullOrEmpty(bitgoWallet))
                 {
