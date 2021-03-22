@@ -57,7 +57,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
                 .As<IMyNoSqlServerDataReader<BitgoCoinEntity>>()
                 .SingleInstance();
 
-            builder.RegisterBitGoSignTransactionClient(Program.Settings.RegisterBitGoSignTransactionGrpcServiceUrl);
+            builder.RegisterBitGoSignTransactionClient(Program.Settings.BitgoSignTransactionGrpcServiceUrl);
 
         }
     }

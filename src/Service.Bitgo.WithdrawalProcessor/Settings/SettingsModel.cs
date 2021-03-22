@@ -20,7 +20,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
         [YamlProperty("BitgoWithdrawalProcessor.BitgoExpressUrl")]
         public string BitgoExpressUrl { get; set; }
 
-        [YamlProperty("BitgoWithdrawalProcessor.RegisterBitGoSignTransactionGrpcServiceUrl")]
-        public string RegisterBitGoSignTransactionGrpcServiceUrl { get; set; }
+        [YamlProperty("BitgoWithdrawalProcessor.BitgoSignTransactionGrpcServiceUrl")]
+        public string BitgoSignTransactionGrpcServiceUrl { get; set; }
     }
 }
