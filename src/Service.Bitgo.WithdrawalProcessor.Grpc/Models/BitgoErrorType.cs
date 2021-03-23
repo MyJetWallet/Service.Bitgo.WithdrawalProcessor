@@ -12,11 +12,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Grpc.Models
         {
             Ok,
             AssetIsNotFoundInBitGo,
-            BalanceNotEnough,
             InternalError,
             AddressIsNotValid,
-            AssetDoNotFound,
-            AssetIsDisabled,
             LowBalance
         }
     }
