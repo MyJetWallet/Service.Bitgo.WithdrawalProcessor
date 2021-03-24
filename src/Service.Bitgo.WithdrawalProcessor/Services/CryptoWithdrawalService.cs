@@ -25,8 +25,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly IPublishTransactionService _publishTransactionService;
         private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
 
-        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, IAssetMapper assetMapper, IBitGoClient bitGoClient,
-            ISpotChangeBalanceService changeBalanceService, IPublishTransactionService publishTransactionService,
+        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, 
+            IAssetMapper assetMapper, 
+            IBitGoClient bitGoClient,
+            ISpotChangeBalanceService changeBalanceService, 
+            IPublishTransactionService publishTransactionService,
             IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
         {
             _logger = logger;
