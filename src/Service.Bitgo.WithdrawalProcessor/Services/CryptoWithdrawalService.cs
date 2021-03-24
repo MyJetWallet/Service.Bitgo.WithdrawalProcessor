@@ -137,7 +137,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 var coinAmount = _assetMapper.ConvertAmountToBitgo(coin, request.Amount);
 
                 var requestId = request.RequestId ?? Guid.NewGuid().ToString("N");
-                var transactionId = $"{requestId}:{request.WalletId}";
+                var transactionId = OperationIdGenerator.GenerateOperationId(requestId, request.WalletId);
 
                 var executeResult = await ExecuteWithdrawalAsync(request, transactionId);
                 if (executeResult != null)
