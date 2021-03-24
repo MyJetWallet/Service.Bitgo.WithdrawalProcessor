@@ -5,6 +5,8 @@ using MyJetWallet.BitGo;
 using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Domain.Transactions;
 using Newtonsoft.Json;
+using Service.BalanceHistory.Grpc;
+using Service.BalanceHistory.Grpc.Models;
 using Service.BitGo.SignTransaction.Grpc;
 using Service.BitGo.SignTransaction.Grpc.Models;
 using Service.Bitgo.WithdrawalProcessor.Grpc;
@@ -21,15 +23,18 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly IBitGoClient _bitGoClient;
         private readonly ISpotChangeBalanceService _changeBalanceService;
         private readonly IPublishTransactionService _publishTransactionService;
+        private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
 
         public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, IAssetMapper assetMapper, IBitGoClient bitGoClient,
-            ISpotChangeBalanceService changeBalanceService, IPublishTransactionService publishTransactionService)
+            ISpotChangeBalanceService changeBalanceService, IPublishTransactionService publishTransactionService,
+            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
         {
             _logger = logger;
             _assetMapper = assetMapper;
             _bitGoClient = bitGoClient;
             _changeBalanceService = changeBalanceService;
             _publishTransactionService = publishTransactionService;
+            _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
         }
 
         public async Task<ValidateAddressResponse> ValidateAddressAsync(ValidateAddressRequest request)
@@ -93,7 +98,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
                 if (string.IsNullOrEmpty(coin) || string.IsNullOrEmpty(bitgoWallet))
                 {
-                    _logger.LogInformation($"[ValidateAddressRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
+                    _logger.LogInformation($"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
 
                     return new CryptoWithdrawalResponse()
                     {
@@ -134,7 +139,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 var executeResult = await ExecuteWithdrawalAsync(request, transactionId);
                 if (executeResult != null)
                 {
-                    _logger.LogError($"[ValidateAddressRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
+                    _logger.LogError($"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
                     return executeResult;
                 }
 
@@ -148,11 +153,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     Amount = coinAmount.ToString()
                 });
 
-                _logger.LogDebug("[ValidateAddressRequest] Withdrawal in BitGo ({operationIdText}): {jsonText}", transactionId, JsonConvert.SerializeObject(transferResult));
+                _logger.LogDebug("[CryptoWithdrawalRequest] Withdrawal in BitGo ({operationIdText}): {jsonText}", transactionId, JsonConvert.SerializeObject(transferResult));
 
                 if (transferResult.Error != null)
                 {
-                    _logger.LogError("[ValidateAddressRequest] Cannot execute withdrawal in BitGo ({operationIdText}): {resultText}, request: {requestText}",
+                    _logger.LogError("[CryptoWithdrawalRequest] Cannot execute withdrawal in BitGo ({operationIdText}): {resultText}, request: {requestText}",
                         transactionId,
                         JsonConvert.SerializeObject(transferResult),
                         JsonConvert.SerializeObject(request));
@@ -168,6 +173,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 }
 
                 var txid = transferResult.Result?.Txid ?? transferResult.DuplicateTransaction?.TxId;
+
+                await _balanceUpdateOperationInfoService.UpdateTransactionOperationInfoAsync(new UpdateTransactionOperationInfoRequest()
+                {
+                    OperationId = transactionId,
+                    RawData = JsonConvert.SerializeObject(transferResult),
+                    Status = TransactionStatus.Pending,
+                    TxId = txid
+                });
 
                 return new CryptoWithdrawalResponse()
                 {

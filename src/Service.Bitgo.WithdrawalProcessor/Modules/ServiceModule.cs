@@ -7,6 +7,7 @@ using MyJetWallet.Sdk.Service;
 using MyNoSqlServer.Abstractions;
 using MyNoSqlServer.DataReader;
 using Service.AssetsDictionary.Client;
+using Service.BalanceHistory.Client;
 using Service.BitGo.SignTransaction.Client;
 using Service.ChangeBalanceGateway.Client;
 
@@ -41,6 +42,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
             builder.RegisterBitgoSettingsReader(myNoSqlClient);
 
             builder.RegisterBitGoSignTransactionClient(Program.Settings.BitgoSignTransactionGrpcServiceUrl);
+
+            builder.RegisterBalanceHistoryOperationInfoClient(Program.Settings.BalanceHistoryWriterGrpcServiceUrl);
 
         }
     }
