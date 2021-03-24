@@ -59,7 +59,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
             serviceBusClient.SocketLogs.AddLogException((context, exception) => ServiceBusLogger.LogInformation(exception, $"MyServiceBusTcpClient[Socket {context?.Id}|{context?.ContextName}|{context?.Inited}][Exception] {exception.Message}"));
             builder.RegisterInstance(serviceBusClient).AsSelf().SingleInstance();
 
-            builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-DepositDetector", TopicQueueType.Permanent);
+            builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-WithdrawalProcessor", TopicQueueType.Permanent);
 
             builder
                 .RegisterType<SignalBitGoTransferJob>()
