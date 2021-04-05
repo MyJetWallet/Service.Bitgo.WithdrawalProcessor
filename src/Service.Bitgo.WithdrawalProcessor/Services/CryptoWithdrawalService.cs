@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.BitGo;
 using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Domain.Transactions;
+using MyJetWallet.Sdk.Service;
 using Newtonsoft.Json;
+using OpenTelemetry.Trace;
 using Service.BalanceHistory.Grpc;
 using Service.BalanceHistory.Grpc.Models;
 using Service.BitGo.SignTransaction.Grpc;
@@ -44,6 +47,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         {
             _logger.LogDebug("Receive ValidateAddressRequest: {jsonText}", JsonConvert.SerializeObject(request));
 
+            request.Address.AddToActivityAsTag("blockchain-address");
+
             try
             {
                 var (coin, _) = _assetMapper.AssetToBitgoCoinAndWallet(request.BrokerId, request.AssetSymbol);
@@ -78,6 +83,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             }
             catch (Exception ex)
             {
+                ex.FailActivity();
+
                 _logger.LogError(ex, "Cannot handle ValidateAddressRequest {jsonText}", JsonConvert.SerializeObject(request));
 
                 return new ValidateAddressResponse()
@@ -94,6 +101,10 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         public async Task<CryptoWithdrawalResponse> CryptoWithdrawalAsync(CryptoWithdrawalRequest request)
         {
             _logger.LogDebug("Receive CryptoWithdrawalRequest: {jsonText}", JsonConvert.SerializeObject(request));
+            request.WalletId.AddToActivityAsTag("walletId");
+            request.ClientId.AddToActivityAsTag("clientId");
+            request.BrokerId.AddToActivityAsTag("brokerId");
+            request.ToAddress.AddToActivityAsTag("blockchain-address");
 
             try
             {
@@ -147,16 +158,22 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 }
 
 
-                var transferResult = await _publishTransactionService.SignAndSendTransactionAsync(new SendTransactionRequest()
+                var sendTransferRequest = new SendTransactionRequest()
                 {
                     BitgoWalletId = bitgoWallet,
                     BitgoCoin = coin,
                     SequenceId = transactionId,
                     Address = request.ToAddress,
                     Amount = coinAmount.ToString()
-                });
+                };
+
+                sendTransferRequest.AddToActivityAsJsonTag("transfer-request");
+
+                var transferResult = await _publishTransactionService.SignAndSendTransactionAsync(sendTransferRequest);
 
                 _logger.LogDebug("[CryptoWithdrawalRequest] Withdrawal in BitGo ({operationIdText}): {jsonText}", transactionId, JsonConvert.SerializeObject(transferResult));
+
+                transferResult.AddToActivityAsJsonTag("transfer-result");
 
                 if (transferResult.Error != null)
                 {
@@ -164,6 +181,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                         transactionId,
                         JsonConvert.SerializeObject(transferResult),
                         JsonConvert.SerializeObject(request));
+
+                    Activity.Current?.SetStatus(Status.Error);
 
                     return new CryptoWithdrawalResponse()
                     {
@@ -193,6 +212,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             }
             catch (Exception ex)
             {
+                ex.FailActivity();
                 _logger.LogError(ex, "Cannot handle CryptoWithdrawalRequest {jsonText}", JsonConvert.SerializeObject(request));
 
                 return new CryptoWithdrawalResponse()

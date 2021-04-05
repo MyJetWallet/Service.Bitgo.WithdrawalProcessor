@@ -28,5 +28,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
 
         [YamlProperty("BitgoWithdrawalProcessor.SpotServiceBusHostPort")]
         public string SpotServiceBusHostPort { get; set; }
+
+        [YamlProperty("BitgoWithdrawalProcessor.ZipkinUrl")]
+        public string ZipkinUrl { get; set; }
     }
 }

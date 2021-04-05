@@ -1,11 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using DotNetCoreDecorators;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.BitGo;
 using MyJetWallet.BitGo.Models.Transfer;
 using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Domain.Transactions;
+using MyJetWallet.Sdk.Service;
 using Newtonsoft.Json;
+using OpenTelemetry.Trace;
 using Service.BalanceHistory.Grpc;
 using Service.BalanceHistory.Grpc.Models;
 using Service.Bitgo.Webhooks.Domain.Models;
@@ -41,6 +44,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
         private async ValueTask HandleSignal(SignalBitGoTransfer signal)
         {
+            using var activity = MyTelemetry.StartActivity("Handle event SignalBitGoTransfer");
+            signal.AddToActivityAsJsonTag("bitgo-signal");
+
             _logger.LogInformation("SignalBitGoTransfer is received: {jsonText}", JsonConvert.SerializeObject(signal));
 
             var transferResp = await _bitGoClient.GetTransferAsync(signal.Coin, signal.WalletId, signal.TransferId);
@@ -49,8 +55,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
             if (transfer == null)
             {
                 _logger.LogError("Cannot handle BitGo signal, transfer do not found {jsonText}", JsonConvert.SerializeObject(signal));
+                Activity.Current?.SetStatus(Status.Error);
                 return;
             }
+
+            transfer.AddToActivityAsJsonTag("bitgo-transfer");
 
             if (string.IsNullOrEmpty(transfer.SequenceId) || transfer.State != "confirmed")
             {
@@ -77,6 +86,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
         private async Task HandleTransactionFee(TransferInfo transfer)
         {
+            using var activity = MyTelemetry.StartActivity("Handle event SignalBitGoTransfer");
+            transfer.AddToActivityAsTag("bitgo-transfer");
+
             var (broker, symbol) = _assetMapper.BitgoCoinToAsset(transfer.Coin, transfer.WalletId);
 
             if (!string.IsNullOrEmpty(broker) && !string.IsNullOrEmpty(symbol))
@@ -86,6 +98,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 if (!double.TryParse(feestr, out var fee))
                 {
                     _logger.LogError("Cannot read fee from bitgo transaction. FeeString {feeString}, coin: {coin}, bitgo wallet: {wallet}", feestr, transfer.Coin, transfer.WalletId);
+                    activity?.SetStatus(Status.Error);
                     return;
                 }
 
@@ -94,8 +107,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 if (wallet == null)
                 {
                     _logger.LogWarning("Cannot parse walletId from bitgo transaction with SequenceId={sequenceId}", transfer.SequenceId);
+                    activity?.SetStatus(Status.Error);
                     return;
                 }
+
+                wallet.AddToActivityAsTag("walletId");
 
                 var request = new BlockchainFeeApplyGrpcRequest()
                 {
@@ -106,16 +122,18 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     FeeAmount = fee
                 };
 
+                request.AddToActivityAsJsonTag("fee-apply-request");
                 var result = await _changeBalanceService.BlockchainFeeApplyAsync(request);
 
                 if (result.ErrorCode != ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok || !result.Result)
                 {
                     _logger.LogError("Cannot apply fee. Request: {requestText}. Error: {jsonText}",
                         JsonConvert.SerializeObject(request), JsonConvert.SerializeObject(result));
+                    activity?.SetStatus(Status.Error);
                 }
                 else
                 {
-                    _logger.LogError("Success apply fee. Request: {requestText}", JsonConvert.SerializeObject(request));
+                    _logger.LogInformation("Success apply fee. Request: {requestText}", JsonConvert.SerializeObject(request));
                 }
             }
         }
