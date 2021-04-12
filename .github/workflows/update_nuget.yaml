@@ -1,8 +1,8 @@
 name: Update nuget
 
-on: 
+on:
   schedule:
-    - cron:  '0 3 * * *'
+    - cron:  '0 8 * * *'   
   workflow_dispatch:
 
 jobs:
@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: master
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
@@ -19,6 +21,13 @@ jobs:
       
     - name: install dotnet-outdated-tool
       run: dotnet tool install --global dotnet-outdated-tool
+      
+    - name: ls
+      run: ls
+      
+    - name: Build
+      run: dotnet build --configuration Release /p:AssemblyVersion=0.0.0
+      
       
     - name: update nugets
       run: dotnet outdated -u
