@@ -95,7 +95,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
             {
                 var feestr = transfer.FeeString;
 
-                if (!double.TryParse(feestr, out var fee))
+                if (!long.TryParse(feestr, out var fee))
                 {
                     _logger.LogError("Cannot read fee from bitgo transaction. FeeString {feeString}, coin: {coin}, bitgo wallet: {wallet}", feestr, transfer.Coin, transfer.WalletId);
                     activity?.SetStatus(Status.Error);
@@ -119,7 +119,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     BrokerId = broker,
                     TransactionId = transfer.SequenceId,
                     AssetSymbol = symbol,
-                    FeeAmount = fee
+                    FeeAmount = _assetMapper.ConvertAmountFromBitgo(transfer.Coin, fee)
                 };
 
                 request.AddToActivityAsJsonTag("fee-apply-request");
