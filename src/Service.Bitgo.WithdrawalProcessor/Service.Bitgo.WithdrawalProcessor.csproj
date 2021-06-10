@@ -16,8 +16,8 @@
     <PackageReference Include="MyJetWallet.Domain" Version="1.0.30" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcMetrics" Version="2.0.0" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcSchema" Version="1.0.5" />
-    <PackageReference Include="MyJetWallet.Sdk.Service" Version="1.4.6" />
-    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="1.6.5" />
+    <PackageReference Include="MyJetWallet.Sdk.Service" Version="1.5.3" />
+    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="1.6.6" />
     <PackageReference Include="MyJetWallet.Service.BitGo.SignTransaction.Client" Version="1.1.0" />
     <PackageReference Include="MyJetWallet.Service.Bitgo.Webhooks.Client" Version="1.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
