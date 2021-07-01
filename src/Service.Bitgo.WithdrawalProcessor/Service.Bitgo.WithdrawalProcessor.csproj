@@ -29,7 +29,7 @@
     <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.5.4" />
     <PackageReference Include="MyJetWallet.Service.ChangeBalanceGateway.Client" Version="1.7.1" />
     <PackageReference Include="MyServiceBus.TcpClient" Version="2.4.4" />
-    <PackageReference Include="MyJetWallet.BitGo" Version="1.0.7" />
+    <PackageReference Include="MyJetWallet.BitGo" Version="1.0.8" />
   </ItemGroup>
 
   <ItemGroup>
