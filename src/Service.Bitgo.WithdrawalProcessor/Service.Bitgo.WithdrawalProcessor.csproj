@@ -10,6 +10,11 @@
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="7.1.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.38.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="MyJetWallet.BitGo.Settings" Version="1.0.6" />
@@ -34,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Service.Bitgo.WithdrawalProcessor.Grpc\Service.Bitgo.WithdrawalProcessor.Grpc.csproj" />
+    <ProjectReference Include="..\Service.Bitgo.WithdrawalProcessor.Postgres\Service.Bitgo.WithdrawalProcessor.Postgres.csproj" />
   </ItemGroup>
 
   <ItemGroup>

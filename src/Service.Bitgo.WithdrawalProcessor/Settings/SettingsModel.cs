@@ -31,5 +31,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
 
         [YamlProperty("BitgoWithdrawalProcessor.ZipkinUrl")]
         public string ZipkinUrl { get; set; }
+
+        [YamlProperty("BitgoWithdrawalProcessor.PostgresConnectionString")]
+        public string PostgresConnectionString { get; set; }
+
+        [YamlProperty("BitgoWithdrawalProcessor.WithdrawalsProcessingIntervalSec")]
+        public int WithdrawalsProcessingIntervalSec { get; set; }
+
+        [YamlProperty("BitgoWithdrawalProcessor.WithdrawalsRetriesLimit")]
+        public int WithdrawalsRetriesLimit { get; set; }
     }
 }

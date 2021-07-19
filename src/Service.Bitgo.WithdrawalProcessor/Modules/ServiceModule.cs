@@ -14,7 +14,9 @@ using Service.BalanceHistory.Client;
 using Service.BitGo.SignTransaction.Client;
 using Service.Bitgo.Webhooks.Client;
 using Service.Bitgo.WithdrawalProcessor.Jobs;
+using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.ChangeBalanceGateway.Client;
+// ReSharper disable TemplateIsNotCompileTimeConstantProblem
 
 namespace Service.Bitgo.WithdrawalProcessor.Modules
 {
@@ -65,6 +67,18 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
                 .RegisterType<SignalBitGoTransferJob>()
                 .AutoActivate()
                 .SingleInstance();
+
+            builder
+                .RegisterType<WithdrawalProcessingJob>()
+                .AutoActivate()
+                .SingleInstance()
+                .AsSelf();
+
+            builder
+                .RegisterType<CryptoWithdrawalService>()
+                .AutoActivate()
+                .SingleInstance()
+                .AsSelf();
         }
 
         public static ILogger ServiceBusLogger { get; set; }

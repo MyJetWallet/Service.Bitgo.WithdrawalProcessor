@@ -7,11 +7,13 @@ using Microsoft.Extensions.Hosting;
 using Autofac;
 using MyJetWallet.Sdk.GrpcMetrics;
 using MyJetWallet.Sdk.GrpcSchema;
+using MyJetWallet.Sdk.Postgres;
 using MyJetWallet.Sdk.Service;
 using Prometheus;
 using ProtoBuf.Grpc.Server;
 using Service.Bitgo.WithdrawalProcessor.Grpc;
 using Service.Bitgo.WithdrawalProcessor.Modules;
+using Service.Bitgo.WithdrawalProcessor.Postgres;
 using Service.Bitgo.WithdrawalProcessor.Services;
 using SimpleTrading.BaseMetrics;
 using SimpleTrading.ServiceStatusReporterConnector;
@@ -29,6 +31,11 @@ namespace Service.Bitgo.WithdrawalProcessor
             });
 
             services.AddHostedService<ApplicationLifetimeManager>();
+            
+            DatabaseContext.LoggerFactory = Program.LogFactory;
+            services.AddDatabase(DatabaseContext.Schema, Program.Settings.PostgresConnectionString,
+                o => new DatabaseContext(o));
+            DatabaseContext.LoggerFactory = null;
 
             services.AddMyTelemetry("SP-", Program.Settings.ZipkinUrl);
         }
@@ -51,6 +58,7 @@ namespace Service.Bitgo.WithdrawalProcessor
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGrpcSchema<CryptoWithdrawalService, ICryptoWithdrawalService>();
+                endpoints.MapGrpcSchema<BitgoWithdrawalService, IBitgoWithdrawalService>();
 
                 endpoints.MapGrpcSchemaRegistry();
 

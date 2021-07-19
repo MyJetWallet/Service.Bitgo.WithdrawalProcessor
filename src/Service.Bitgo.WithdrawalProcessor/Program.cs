@@ -14,7 +14,7 @@ namespace Service.Bitgo.WithdrawalProcessor
 {
     public class Program
     {
-        public const string SettingsFileName = ".myjetwallet-1";
+        public const string SettingsFileName = ".myjetwallet";
 
         public static SettingsModel Settings { get; private set; }
 

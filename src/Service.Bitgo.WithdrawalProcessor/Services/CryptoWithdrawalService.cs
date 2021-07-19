@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.BitGo;
 using MyJetWallet.BitGo.Settings.Services;
@@ -12,14 +13,21 @@ using Service.BalanceHistory.Grpc;
 using Service.BalanceHistory.Grpc.Models;
 using Service.BitGo.SignTransaction.Grpc;
 using Service.BitGo.SignTransaction.Grpc.Models;
+using Service.Bitgo.WithdrawalProcessor.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Grpc;
 using Service.Bitgo.WithdrawalProcessor.Grpc.Models;
+using Service.Bitgo.WithdrawalProcessor.Postgres;
+using Service.Bitgo.WithdrawalProcessor.Postgres.Models;
 using Service.ChangeBalanceGateway.Grpc;
 using Service.ChangeBalanceGateway.Grpc.Models;
 
+// ReSharper disable IdentifierTypo
+// ReSharper disable TemplateIsNotCompileTimeConstantProblem
+// ReSharper disable InconsistentLogPropertyNaming
+
 namespace Service.Bitgo.WithdrawalProcessor.Services
 {
-    public class CryptoWithdrawalService: ICryptoWithdrawalService
+    public class CryptoWithdrawalService : ICryptoWithdrawalService
     {
         private readonly ILogger<CryptoWithdrawalService> _logger;
         private readonly IAssetMapper _assetMapper;
@@ -27,13 +35,15 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly ISpotChangeBalanceService _changeBalanceService;
         private readonly IPublishTransactionService _publishTransactionService;
         private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
+        private readonly DbContextOptionsBuilder<DatabaseContext> _dbContextOptionsBuilder;
 
-        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger, 
-            IAssetMapper assetMapper, 
+        public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger,
+            IAssetMapper assetMapper,
             IBitGoClient bitGoClient,
-            ISpotChangeBalanceService changeBalanceService, 
+            ISpotChangeBalanceService changeBalanceService,
             IPublishTransactionService publishTransactionService,
-            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService)
+            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService,
+            DbContextOptionsBuilder<DatabaseContext> dbContextOptionsBuilder)
         {
             _logger = logger;
             _assetMapper = assetMapper;
@@ -41,6 +51,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             _changeBalanceService = changeBalanceService;
             _publishTransactionService = publishTransactionService;
             _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
+            _dbContextOptionsBuilder = dbContextOptionsBuilder;
         }
 
         public async Task<ValidateAddressResponse> ValidateAddressAsync(ValidateAddressRequest request)
@@ -55,13 +66,15 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
                 if (string.IsNullOrEmpty(coin))
                 {
-                    _logger.LogInformation($"[ValidateAddressRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
-                    
+                    _logger.LogInformation(
+                        $"[ValidateAddressRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
+
                     return new ValidateAddressResponse()
                     {
                         Error = new BitgoErrorType()
                         {
-                            Message = $"Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}",
+                            Message =
+                                $"Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}",
                             Code = BitgoErrorType.ErrorCode.AssetIsNotFoundInBitGo
                         }
                     };
@@ -71,10 +84,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
                 if (!res.Success)
                 {
-                    throw new Exception($"[ValidateAddressRequest] Cannot receive data from bitgo: {res.Error.Message}");
+                    throw new Exception(
+                        $"[ValidateAddressRequest] Cannot receive data from bitgo: {res.Error.Message}");
                 }
 
-                _logger.LogDebug("Address {address} ({coin}) verification result: {resultText}", request.Address, coin, res.Data.IsValid.ToString());
+                _logger.LogDebug("Address {address} ({coin}) verification result: {resultText}", request.Address, coin,
+                    res.Data.IsValid.ToString());
 
                 return new ValidateAddressResponse()
                 {
@@ -85,7 +100,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             {
                 ex.FailActivity();
 
-                _logger.LogError(ex, "Cannot handle ValidateAddressRequest {jsonText}", JsonConvert.SerializeObject(request));
+                _logger.LogError(ex, "Cannot handle ValidateAddressRequest {jsonText}",
+                    JsonConvert.SerializeObject(request));
 
                 return new ValidateAddressResponse()
                 {
@@ -105,27 +121,29 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             request.ClientId.AddToActivityAsTag("clientId");
             request.BrokerId.AddToActivityAsTag("brokerId");
             request.ToAddress.AddToActivityAsTag("blockchain-address");
-
+            
             try
             {
                 var (coin, bitgoWallet) = _assetMapper.AssetToBitgoCoinAndWallet(request.BrokerId, request.AssetSymbol);
 
                 if (string.IsNullOrEmpty(coin) || string.IsNullOrEmpty(bitgoWallet))
                 {
-                    _logger.LogInformation($"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
+                    _logger.LogInformation(
+                        $"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}");
 
                     return new CryptoWithdrawalResponse()
                     {
                         Error = new BitgoErrorType()
                         {
-                            Message = $"Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}",
+                            Message =
+                                $"Cannot found bitgo coin association for asset {request.AssetSymbol}, broker {request.BrokerId}",
                             Code = BitgoErrorType.ErrorCode.AssetIsNotFoundInBitGo
                         }
                     };
                 }
 
                 var res = await _bitGoClient.VerifyAddressAsync(coin, request.ToAddress);
-                
+
                 if (!res.Success)
                 {
                     throw new Exception($"Cannot receive data from bitgo: {res.Error.Message}");
@@ -145,76 +163,38 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     };
                 }
 
-                var coinAmount = _assetMapper.ConvertAmountToBitgo(coin, request.Amount);
-
                 var requestId = request.RequestId ?? Guid.NewGuid().ToString("N");
                 var transactionId = OperationIdGenerator.GenerateOperationId(requestId, request.WalletId);
 
-                var executeResult = await ExecuteWithdrawalAsync(request, transactionId);
-                if (executeResult != null)
-                {
-                    _logger.LogError($"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
-                    return executeResult;
-                }
 
-
-                var sendTransferRequest = new SendTransactionRequest()
+                await using var ctx = DatabaseContext.Create(_dbContextOptionsBuilder);
+                WithdrawalEntity withdrawalEntity = new WithdrawalEntity()
                 {
-                    BitgoWalletId = bitgoWallet,
-                    BitgoCoin = coin,
-                    SequenceId = transactionId,
-                    Address = request.ToAddress,
-                    Amount = coinAmount.ToString()
+                    BrokerId = request.BrokerId,
+                    ClientId = request.ClientId,
+                    WalletId = request.WalletId,
+                    TransactionId = transactionId,
+                    Amount = request.Amount,
+                    AssetSymbol = request.AssetSymbol,
+                    Comment =
+                        $"Bitgo withdrawal [{request.AssetSymbol}:{request.Amount}:{request.WalletId}]",
+                    Integration = "BitGo",
+                    Status = WithdrawalStatus.New,
+                    EventDate = DateTime.UtcNow,
+                    ToAddress = request.ToAddress
                 };
-
-                sendTransferRequest.AddToActivityAsJsonTag("transfer-request");
-
-                var transferResult = await _publishTransactionService.SignAndSendTransactionAsync(sendTransferRequest);
-
-                _logger.LogDebug("[CryptoWithdrawalRequest] Withdrawal in BitGo ({operationIdText}): {jsonText}", transactionId, JsonConvert.SerializeObject(transferResult));
-
-                transferResult.AddToActivityAsJsonTag("transfer-result");
-
-                if (transferResult.Error != null)
-                {
-                    _logger.LogError("[CryptoWithdrawalRequest] Cannot execute withdrawal in BitGo ({operationIdText}): {resultText}, request: {requestText}",
-                        transactionId,
-                        JsonConvert.SerializeObject(transferResult),
-                        JsonConvert.SerializeObject(request));
-
-                    Activity.Current?.SetStatus(Status.Error);
-
-                    return new CryptoWithdrawalResponse()
-                    {
-                        Error = new BitgoErrorType()
-                        {
-                            Code = BitgoErrorType.ErrorCode.InternalError,
-                            Message = transferResult.Error.Message
-                        }
-                    };
-                }
-
-                var txid = transferResult.Result?.Txid ?? transferResult.DuplicateTransaction?.TxId;
-
-                await _balanceUpdateOperationInfoService.UpdateTransactionOperationInfoAsync(new UpdateTransactionOperationInfoRequest()
-                {
-                    OperationId = transactionId,
-                    RawData = JsonConvert.SerializeObject(transferResult),
-                    Status = TransactionStatus.Pending,
-                    TxId = txid
-                });
+                await ctx.InsertAsync(withdrawalEntity);
 
                 return new CryptoWithdrawalResponse()
                 {
-                    OperationId = transactionId,
-                    TxId = txid
+                    OperationId = transactionId
                 };
             }
             catch (Exception ex)
             {
                 ex.FailActivity();
-                _logger.LogError(ex, "Cannot handle CryptoWithdrawalRequest {jsonText}", JsonConvert.SerializeObject(request));
-
+                _logger.LogError(ex, "Cannot handle CryptoWithdrawalRequest {jsonText}",
+                    JsonConvert.SerializeObject(request));
                 return new CryptoWithdrawalResponse()
                 {
                     Error = new BitgoErrorType()
@@ -225,66 +205,159 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 };
             }
         }
+        public async Task ExecuteWithdrawalAsync(WithdrawalEntity withdrawalEntity)
+        {
+            var request = new CryptoWithdrawalRequest
+            {
+                Amount = withdrawalEntity.Amount,
+                AssetSymbol = withdrawalEntity.AssetSymbol,
+                BrokerId = withdrawalEntity.BrokerId,
+                ClientId = withdrawalEntity.ClientId,
+                WalletId = withdrawalEntity.WalletId,
+                RequestId = withdrawalEntity.TransactionId,
+                ToAddress = withdrawalEntity.ToAddress
+            };
 
-        private async Task<CryptoWithdrawalResponse> ExecuteWithdrawalAsync(CryptoWithdrawalRequest request, string transactionId)
+            if (withdrawalEntity.Status == WithdrawalStatus.New ||
+                withdrawalEntity.Status == WithdrawalStatus.ErrorInMe || 
+                withdrawalEntity.Status == WithdrawalStatus.Stopped)
+            {
+                try
+                {
+                    var executeResult = await ChangeBalanceAsync(withdrawalEntity, request);
+                    if (executeResult != null)
+                    {
+                        _logger.LogError(
+                            $"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
+                        withdrawalEntity.Status = WithdrawalStatus.ErrorInMe;
+                        withdrawalEntity.LastError = executeResult.Error?.Message;
+                        withdrawalEntity.RetriesCount++;
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        $"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {ex.Message}");
+                    withdrawalEntity.Status = WithdrawalStatus.ErrorInMe;
+                    withdrawalEntity.LastError = ex.Message;
+                    withdrawalEntity.RetriesCount++;
+                    return;
+                }
+            }
+
+            var (coin, bitgoWallet) =
+                _assetMapper.AssetToBitgoCoinAndWallet(withdrawalEntity.BrokerId, withdrawalEntity.AssetSymbol);
+
+            if (string.IsNullOrEmpty(coin) || string.IsNullOrEmpty(bitgoWallet))
+            {
+                _logger.LogInformation(
+                    $"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {withdrawalEntity.AssetSymbol}, broker {withdrawalEntity.BrokerId}");
+
+                withdrawalEntity.Status = WithdrawalStatus.Error;
+                withdrawalEntity.LastError =
+                    $"Cannot found bitgo coin association for asset {withdrawalEntity.AssetSymbol}, broker {withdrawalEntity.BrokerId}+";
+                withdrawalEntity.RetriesCount++;
+                
+                return;
+            }
+
+            var coinAmount = _assetMapper.ConvertAmountToBitgo(withdrawalEntity.AssetSymbol, withdrawalEntity.Amount);
+            var sendTransferRequest = new SendTransactionRequest()
+            {
+                BitgoWalletId = bitgoWallet,
+                BitgoCoin = coin,
+                SequenceId = withdrawalEntity.TransactionId,
+                Address = withdrawalEntity.ToAddress,
+                Amount = coinAmount.ToString()
+            };
+
+            sendTransferRequest.AddToActivityAsJsonTag("transfer-request");
+
+            var transferResult = await _publishTransactionService.SignAndSendTransactionAsync(sendTransferRequest);
+
+            _logger.LogDebug("[CryptoWithdrawalRequest] Withdrawal in BitGo ({operationIdText}): {jsonText}",
+                withdrawalEntity.TransactionId, JsonConvert.SerializeObject(transferResult));
+
+            transferResult.AddToActivityAsJsonTag("transfer-result");
+
+            if (transferResult.Error != null)
+            {
+                _logger.LogError(
+                    "[CryptoWithdrawalRequest] Cannot execute withdrawal in BitGo ({operationIdText}): {resultText}, request: {requestText}",
+                    withdrawalEntity.TransactionId,
+                    JsonConvert.SerializeObject(transferResult),
+                    JsonConvert.SerializeObject(request));
+
+                Activity.Current?.SetStatus(Status.Error);
+
+                withdrawalEntity.Status = WithdrawalStatus.Error;
+                withdrawalEntity.LastError = transferResult.Error.Message;
+                withdrawalEntity.RetriesCount++;
+
+                return;
+            }
+
+            var txid = transferResult.Result?.Txid ?? transferResult.DuplicateTransaction?.TxId;
+
+            await _balanceUpdateOperationInfoService.UpdateTransactionOperationInfoAsync(
+                new UpdateTransactionOperationInfoRequest()
+                {
+                    OperationId = withdrawalEntity.TransactionId,
+                    RawData = JsonConvert.SerializeObject(transferResult),
+                    Status = TransactionStatus.Pending,
+                    TxId = txid
+                });
+
+            withdrawalEntity.Status = WithdrawalStatus.Success;
+            withdrawalEntity.Txid = txid;
+        }
+
+        private async Task<CryptoWithdrawalResponse> ChangeBalanceAsync(Withdrawal withdrawalEntity,
+            CryptoWithdrawalRequest request)
         {
             var changeBalanceResult = await _changeBalanceService.BlockchainWithdrawalAsync(
                 new BlockchainWithdrawalGrpcRequest(
-                    transactionId,
-                    request.ClientId,
-                    request.WalletId,
-                    -request.Amount,
-                    request.AssetSymbol,
+                    withdrawalEntity.TransactionId,
+                    withdrawalEntity.ClientId,
+                    withdrawalEntity.WalletId,
+                    -withdrawalEntity.Amount,
+                    withdrawalEntity.AssetSymbol,
                     $"request: {JsonConvert.SerializeObject(request)}",
-                    request.BrokerId,
-                    "BitGo",
+                    withdrawalEntity.BrokerId,
+                    withdrawalEntity.Integration,
                     string.Empty,
                     TransactionStatus.New,
-                    request.ToAddress));
+                    withdrawalEntity.ToAddress));
 
-            if (changeBalanceResult.ErrorCode == ChangeBalanceGrpcResponse.ErrorCodeEnum.LowBalance)
+            if (changeBalanceResult.ErrorCode == ChangeBalanceGrpcResponse.ErrorCodeEnum.LowBalance ||
+                changeBalanceResult.ErrorCode == ChangeBalanceGrpcResponse.ErrorCodeEnum.WalletDoNotFound)
             {
+                return new CryptoWithdrawalResponse
                 {
-                    return new CryptoWithdrawalResponse()
+                    Error = new BitgoErrorType
                     {
-                        Error = new BitgoErrorType()
-                        {
-                            Code = BitgoErrorType.ErrorCode.LowBalance,
-                            Message = changeBalanceResult.ErrorMessage
-                        }
-                    };
-                }
+                        Code = BitgoErrorType.ErrorCode.LowBalance,
+                        Message = changeBalanceResult.ErrorMessage
+                    }
+                };
             }
 
-            if (changeBalanceResult.ErrorCode == ChangeBalanceGrpcResponse.ErrorCodeEnum.WalletDoNotFound)
+            if (changeBalanceResult.ErrorCode != ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok &&
+                changeBalanceResult.ErrorCode != ChangeBalanceGrpcResponse.ErrorCodeEnum.Duplicate)
             {
+                return new CryptoWithdrawalResponse()
                 {
-                    return new CryptoWithdrawalResponse()
+                    Error = new BitgoErrorType()
                     {
-                        Error = new BitgoErrorType()
-                        {
-                            Code = BitgoErrorType.ErrorCode.LowBalance,
-                            Message = changeBalanceResult.ErrorMessage
-                        }
-                    };
-                }
-            }
-
-            if (changeBalanceResult.ErrorCode != ChangeBalanceGrpcResponse.ErrorCodeEnum.Ok && changeBalanceResult.ErrorCode != ChangeBalanceGrpcResponse.ErrorCodeEnum.Duplicate)
-            {
-                {
-                    return new CryptoWithdrawalResponse()
-                    {
-                        Error = new BitgoErrorType()
-                        {
-                            Code = BitgoErrorType.ErrorCode.InternalError,
-                            Message = changeBalanceResult.ErrorMessage
-                        }
-                    };
-                }
+                        Code = BitgoErrorType.ErrorCode.InternalError,
+                        Message = changeBalanceResult.ErrorMessage
+                    }
+                };
             }
 
             return null;
         }
+
     }
 }
