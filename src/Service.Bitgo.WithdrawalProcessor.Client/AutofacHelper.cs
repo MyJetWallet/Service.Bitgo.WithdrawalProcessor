@@ -12,5 +12,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Client
 
             builder.RegisterInstance(factory.GetCryptoWithdrawalService()).As<ICryptoWithdrawalService>().SingleInstance();
         }
+        public static void RegisterBitgoWithdrawalClient(this ContainerBuilder builder, string bitgoWithdrawalGrpcServiceUrl)
+        {
+            var factory = new BitgoWithdrawalServiceClientFactory(bitgoWithdrawalGrpcServiceUrl);
+
+            builder.RegisterInstance(factory.GetBitgoWithdrawalService()).As<IBitgoWithdrawalService>().SingleInstance();
+        }
     }
 }
