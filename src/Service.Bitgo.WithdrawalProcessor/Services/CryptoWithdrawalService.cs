@@ -262,8 +262,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 return;
             }
 
-            var coinAmount = _assetMapper.ConvertAmountToBitgo(withdrawalEntity.AssetSymbol, withdrawalEntity.Amount);
-            var sendTransferRequest = new SendTransactionRequest()
+            var coinAmount = _assetMapper.ConvertAmountToBitgo(coin, withdrawalEntity.Amount);
+            var sendTransferRequest = new SendTransactionRequest
             {
                 BitgoWalletId = bitgoWallet,
                 BitgoCoin = coin,
