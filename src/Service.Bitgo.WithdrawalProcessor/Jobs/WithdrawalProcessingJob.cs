@@ -70,7 +70,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     catch (Exception ex)
                     {
                         withdrawal.Status = WithdrawalStatus.Error;
-                        withdrawal.LastError = ex.Message;
+                        withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
                         withdrawal.RetriesCount++;
                     }
                 }
