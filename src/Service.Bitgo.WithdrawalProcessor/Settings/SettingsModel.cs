@@ -23,9 +23,6 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
         [YamlProperty("BitgoWithdrawalProcessor.BitgoSignTransactionGrpcServiceUrl")]
         public string BitgoSignTransactionGrpcServiceUrl { get; set; }
 
-        [YamlProperty("BitgoWithdrawalProcessor.BalanceHistoryWriterGrpcServiceUrl")]
-        public string BalanceHistoryWriterGrpcServiceUrl { get; set; }
-
         [YamlProperty("BitgoWithdrawalProcessor.SpotServiceBusHostPort")]
         public string SpotServiceBusHostPort { get; set; }
 

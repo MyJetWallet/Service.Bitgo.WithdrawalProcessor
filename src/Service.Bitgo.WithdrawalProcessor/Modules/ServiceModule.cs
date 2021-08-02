@@ -50,8 +50,6 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
 
             builder.RegisterBitGoSignTransactionClient(Program.Settings.BitgoSignTransactionGrpcServiceUrl);
 
-            builder.RegisterBalanceHistoryOperationInfoClient(Program.Settings.BalanceHistoryWriterGrpcServiceUrl);
-
             ServiceBusLogger = Program.LogFactory.CreateLogger(nameof(MyServiceBusTcpClient));
 
             var serviceBusClient = new MyServiceBusTcpClient(Program.ReloadedSettings(e => e.SpotServiceBusHostPort), ApplicationEnvironment.HostName);
@@ -62,6 +60,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
             builder.RegisterInstance(serviceBusClient).AsSelf().SingleInstance();
 
             builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-WithdrawalProcessor", TopicQueueType.Permanent);
+            builder.BalanceHistoryOperationInfoPublisher(serviceBusClient);
 
             builder
                 .RegisterType<SignalBitGoTransferJob>()

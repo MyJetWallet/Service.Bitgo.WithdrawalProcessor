@@ -22,6 +22,7 @@
     <PackageReference Include="MyJetWallet.Sdk.GrpcMetrics" Version="2.0.0" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcSchema" Version="1.0.6" />
     <PackageReference Include="MyJetWallet.Sdk.Service" Version="1.5.5" />
+    <PackageReference Include="MyJetWallet.Sdk.ServiceBus" Version="1.0.3" />
     <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="2.0.4" />
     <PackageReference Include="MyJetWallet.Service.BitGo.SignTransaction.Client" Version="1.1.0" />
     <PackageReference Include="MyJetWallet.Service.Bitgo.Webhooks.Client" Version="1.0.0" />

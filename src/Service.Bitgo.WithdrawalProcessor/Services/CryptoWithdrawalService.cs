@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using DotNetCoreDecorators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.BitGo;
@@ -9,8 +10,7 @@ using MyJetWallet.Domain.Transactions;
 using MyJetWallet.Sdk.Service;
 using Newtonsoft.Json;
 using OpenTelemetry.Trace;
-using Service.BalanceHistory.Grpc;
-using Service.BalanceHistory.Grpc.Models;
+using Service.BalanceHistory.Domain.Models;
 using Service.BitGo.SignTransaction.Grpc;
 using Service.BitGo.SignTransaction.Grpc.Models;
 using Service.Bitgo.WithdrawalProcessor.Domain.Models;
@@ -34,24 +34,24 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly IBitGoClient _bitGoClient;
         private readonly ISpotChangeBalanceService _changeBalanceService;
         private readonly IPublishTransactionService _publishTransactionService;
-        private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
         private readonly DbContextOptionsBuilder<DatabaseContext> _dbContextOptionsBuilder;
+        private readonly IPublisher<WalletBalanceUpdateOperationInfo> _balanceUpdateOperationInfoPublisher;
 
         public CryptoWithdrawalService(ILogger<CryptoWithdrawalService> logger,
             IAssetMapper assetMapper,
             IBitGoClient bitGoClient,
             ISpotChangeBalanceService changeBalanceService,
             IPublishTransactionService publishTransactionService,
-            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService,
-            DbContextOptionsBuilder<DatabaseContext> dbContextOptionsBuilder)
+            DbContextOptionsBuilder<DatabaseContext> dbContextOptionsBuilder, 
+            IPublisher<WalletBalanceUpdateOperationInfo> balanceUpdateOperationInfoPublisher)
         {
             _logger = logger;
             _assetMapper = assetMapper;
             _bitGoClient = bitGoClient;
             _changeBalanceService = changeBalanceService;
             _publishTransactionService = publishTransactionService;
-            _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
             _dbContextOptionsBuilder = dbContextOptionsBuilder;
+            _balanceUpdateOperationInfoPublisher = balanceUpdateOperationInfoPublisher;
         }
 
         public async Task<ValidateAddressResponse> ValidateAddressAsync(ValidateAddressRequest request)
@@ -300,8 +300,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
             var txid = transferResult.Result?.Txid ?? transferResult.DuplicateTransaction?.TxId;
 
-            await _balanceUpdateOperationInfoService.UpdateTransactionOperationInfoAsync(
-                new UpdateTransactionOperationInfoRequest()
+            await _balanceUpdateOperationInfoPublisher.PublishAsync(
+                new WalletBalanceUpdateOperationInfo
                 {
                     OperationId = withdrawalEntity.TransactionId,
                     RawData = JsonConvert.SerializeObject(transferResult),

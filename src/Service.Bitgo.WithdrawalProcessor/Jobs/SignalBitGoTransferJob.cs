@@ -9,8 +9,7 @@ using MyJetWallet.Domain.Transactions;
 using MyJetWallet.Sdk.Service;
 using Newtonsoft.Json;
 using OpenTelemetry.Trace;
-using Service.BalanceHistory.Grpc;
-using Service.BalanceHistory.Grpc.Models;
+using Service.BalanceHistory.Domain.Models;
 using Service.Bitgo.Webhooks.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.ChangeBalanceGateway.Grpc;
@@ -22,23 +21,22 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
     {
         private readonly ILogger<SignalBitGoTransferJob> _logger;
         private readonly IBitGoClient _bitGoClient;
-        private readonly IWalletBalanceUpdateOperationInfoService _balanceUpdateOperationInfoService;
         private readonly IAssetMapper _assetMapper;
         private readonly ISpotChangeBalanceService _changeBalanceService;
+        private readonly IPublisher<WalletBalanceUpdateOperationInfo> _balanceUpdateOperationInfoPublisher;
 
         public SignalBitGoTransferJob(ISubscriber<SignalBitGoTransfer> subscriber, 
             ILogger<SignalBitGoTransferJob> logger,
             IBitGoClient bitGoClient,
-            IWalletBalanceUpdateOperationInfoService balanceUpdateOperationInfoService,
             IAssetMapper assetMapper,
-            ISpotChangeBalanceService changeBalanceService)
+            ISpotChangeBalanceService changeBalanceService, 
+            IPublisher<WalletBalanceUpdateOperationInfo> balanceUpdateOperationInfoPublisher)
         {
             _logger = logger;
             _bitGoClient = bitGoClient;
-            _balanceUpdateOperationInfoService = balanceUpdateOperationInfoService;
             _assetMapper = assetMapper;
             _changeBalanceService = changeBalanceService;
-
+            _balanceUpdateOperationInfoPublisher = balanceUpdateOperationInfoPublisher;
             subscriber.Subscribe(HandleSignal);
         }
 
@@ -71,12 +69,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
             _logger.LogInformation("Transfer fromm BitGo SequenceId: {SequenceId}, transfer: {jsonText}", sequenceId, JsonConvert.SerializeObject(transfer));
 
-            await _balanceUpdateOperationInfoService.UpdateTransactionOperationInfoAsync(new UpdateTransactionOperationInfoRequest()
-            {
+            await _balanceUpdateOperationInfoPublisher.PublishAsync(
+                new WalletBalanceUpdateOperationInfo
+                {
                 OperationId = sequenceId,
                 Status = TransactionStatus.Confirmed,
                 TxId = transfer.TxId
-            });
+                });
 
             await HandleTransactionFee(transfer);
 
