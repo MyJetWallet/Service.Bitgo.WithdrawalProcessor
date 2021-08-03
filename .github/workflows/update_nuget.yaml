@@ -33,7 +33,7 @@ jobs:
       run: dotnet outdated -u
       
     - name: Commit & Push changes
-      uses: actions-js/push@master
+      MyJetWallet/push@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         message: auto-update nugets
