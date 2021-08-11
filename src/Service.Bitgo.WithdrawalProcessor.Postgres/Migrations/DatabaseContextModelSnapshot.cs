@@ -17,7 +17,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Postgres.Migrations
             modelBuilder
                 .HasDefaultSchema("withdrawals")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.8")
+                .HasAnnotation("ProductVersion", "5.0.9")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Service.Bitgo.WithdrawalProcessor.Postgres.Models.WithdrawalEntity", b =>

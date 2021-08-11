@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Service.Bitgo.WithdrawalProcessor.Postgres.Migrations
 {
-    public partial class InitialCreate : Migration
+    public partial class version_1 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -29,10 +29,10 @@ namespace Service.Bitgo.WithdrawalProcessor.Postgres.Migrations
                     Txid = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     MatchingEngineId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    LastError = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    LastError = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
                     RetriesCount = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     EventDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    ToAddress = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
+                    ToAddress = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true)
                 },
                 constraints: table =>
                 {

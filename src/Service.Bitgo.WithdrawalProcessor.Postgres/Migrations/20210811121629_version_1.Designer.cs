@@ -10,8 +10,8 @@ using Service.Bitgo.WithdrawalProcessor.Postgres;
 namespace Service.Bitgo.WithdrawalProcessor.Postgres.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20210727221607_IncreaseErrorFieldSize")]
-    partial class IncreaseErrorFieldSize
+    [Migration("20210811121629_version_1")]
+    partial class version_1
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -19,7 +19,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Postgres.Migrations
             modelBuilder
                 .HasDefaultSchema("withdrawals")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.8")
+                .HasAnnotation("ProductVersion", "5.0.9")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.Entity("Service.Bitgo.WithdrawalProcessor.Postgres.Models.WithdrawalEntity", b =>
