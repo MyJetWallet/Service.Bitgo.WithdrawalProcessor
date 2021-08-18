@@ -5,6 +5,7 @@ using MyJetWallet.BitGo.Settings.Ioc;
 using MyJetWallet.BitGo.Settings.NoSql;
 using MyJetWallet.BitGo.Settings.Services;
 using MyJetWallet.Sdk.Service;
+using MyJetWallet.Sdk.ServiceBus;
 using MyNoSqlServer.Abstractions;
 using MyNoSqlServer.DataReader;
 using MyServiceBus.Abstractions;
@@ -13,6 +14,7 @@ using Service.AssetsDictionary.Client;
 using Service.BalanceHistory.Client;
 using Service.BitGo.SignTransaction.Client;
 using Service.Bitgo.Webhooks.Client;
+using Service.Bitgo.WithdrawalProcessor.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Jobs;
 using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.ChangeBalanceGateway.Client;
@@ -61,6 +63,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
 
             builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-WithdrawalProcessor", TopicQueueType.Permanent);
             builder.BalanceHistoryOperationInfoPublisher(serviceBusClient);
+            
+            builder.RegisterMyServiceBusSubscriberSingle<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, "Bitgo-WithdrawalProcessor-Verification", TopicQueueType.Permanent);
 
             builder
                 .RegisterType<SignalBitGoTransferJob>()

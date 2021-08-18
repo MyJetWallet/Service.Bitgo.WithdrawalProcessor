@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +15,8 @@
     <PackageReference Include="JetBrains.Annotations" Version="2021.2.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.38.0" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcMetrics" Version="2.0.0" />
+    <PackageReference Include="MyJetWallet.Sdk.ServiceBus" Version="1.0.3" />
+    <PackageReference Include="MyServiceBus.TcpClient" Version="2.4.4" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />
     <PackageReference Include="protobuf-net.Grpc" Version="1.0.152" />
   </ItemGroup>
