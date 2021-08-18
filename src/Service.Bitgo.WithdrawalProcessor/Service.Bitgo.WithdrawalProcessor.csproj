@@ -23,7 +23,7 @@
     <PackageReference Include="MyJetWallet.Sdk.GrpcSchema" Version="1.0.6" />
     <PackageReference Include="MyJetWallet.Sdk.Service" Version="1.5.5" />
     <PackageReference Include="MyJetWallet.Sdk.ServiceBus" Version="1.0.3" />
-    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="2.0.7" />
+    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="2.0.8" />
     <PackageReference Include="MyJetWallet.Service.BitGo.SignTransaction.Client" Version="1.1.0" />
     <PackageReference Include="MyJetWallet.Service.Bitgo.Webhooks.Client" Version="1.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
@@ -32,10 +32,10 @@
     <PackageReference Include="SimpleTrading.BaseMetrics" Version="1.0.3" />
     <PackageReference Include="SimpleTrading.ServiceStatusReporterConnector" Version="1.0.9" />
     <PackageReference Include="SimpleTrading.SettingsReader" Version="1.1.0" />
-    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.6.8" />
+    <PackageReference Include="MyJetWallet.Service.AssetsDictionary.Client" Version="1.7.1" />
     <PackageReference Include="MyJetWallet.Service.ChangeBalanceGateway.Client" Version="1.7.1" />
     <PackageReference Include="MyServiceBus.TcpClient" Version="2.4.4" />
-    <PackageReference Include="MyJetWallet.BitGo" Version="1.0.9" />
+    <PackageReference Include="MyJetWallet.BitGo" Version="1.0.10" />
   </ItemGroup>
 
   <ItemGroup>
