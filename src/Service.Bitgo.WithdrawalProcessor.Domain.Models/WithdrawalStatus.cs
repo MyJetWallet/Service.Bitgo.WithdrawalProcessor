@@ -7,6 +7,8 @@
         Error,
         Success,
         Cancelled,
-        Stopped
+        Stopped,
+        Pending,
+        ApprovalPending
     }
 }

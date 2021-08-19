@@ -37,5 +37,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
 
         [YamlProperty("BitgoWithdrawalProcessor.WithdrawalsRetriesLimit")]
         public int WithdrawalsRetriesLimit { get; set; }
+        
+        [YamlProperty("BitgoWithdrawalProcessor.WithdrawalExpirationTimeInMin")]
+        public int WithdrawalExpirationTimeInMin { get; set; }
+        
+        [YamlProperty("BitgoWithdrawalProcessor.VerificationCodesGrpcUrl")]
+        public string VerificationCodesGrpcUrl { get; set; }
+        
     }
 }

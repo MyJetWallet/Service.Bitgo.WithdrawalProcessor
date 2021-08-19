@@ -18,6 +18,8 @@ using Service.Bitgo.WithdrawalProcessor.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Jobs;
 using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.ChangeBalanceGateway.Client;
+using Service.VerificationCodes.Client;
+
 // ReSharper disable TemplateIsNotCompileTimeConstantProblem
 
 namespace Service.Bitgo.WithdrawalProcessor.Modules
@@ -60,12 +62,15 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
             serviceBusClient.SocketLogs.AddLogInfo((context, msg) => ServiceBusLogger.LogInformation($"MyServiceBusTcpClient[Socket {context?.Id}|{context?.ContextName}|{context?.Inited}][Info] {msg}"));
             serviceBusClient.SocketLogs.AddLogException((context, exception) => ServiceBusLogger.LogInformation(exception, $"MyServiceBusTcpClient[Socket {context?.Id}|{context?.ContextName}|{context?.Inited}][Exception] {exception.Message}"));
             builder.RegisterInstance(serviceBusClient).AsSelf().SingleInstance();
-
+            
+            builder.RegisterMyServiceBusSubscriberSingle<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, "Bitgo-WithdrawalProcessor-Verification", TopicQueueType.Permanent);
+            
             builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-WithdrawalProcessor", TopicQueueType.Permanent);
             builder.BalanceHistoryOperationInfoPublisher(serviceBusClient);
             
-            builder.RegisterMyServiceBusSubscriberSingle<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, "Bitgo-WithdrawalProcessor-Verification", TopicQueueType.Permanent);
 
+            builder.RegisterVerificationCodesClient(Program.Settings.VerificationCodesGrpcUrl);
+            
             builder
                 .RegisterType<SignalBitGoTransferJob>()
                 .AutoActivate()

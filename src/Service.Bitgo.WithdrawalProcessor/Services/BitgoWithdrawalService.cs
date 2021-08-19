@@ -162,7 +162,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     };
                 }
 
-                if (withdrawal.Status != WithdrawalStatus.New)
+                if (withdrawal.Status != WithdrawalStatus.New 
+                    && withdrawal.Status != WithdrawalStatus.ApprovalPending
+                    && withdrawal.Status != WithdrawalStatus.Pending)
                 {
                     _logger.LogInformation("Incorrect status {status} for {withdrawalId}", withdrawal.Status,
                         request.WithdrawalId);

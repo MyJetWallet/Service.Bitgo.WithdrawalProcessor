@@ -10,7 +10,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         
         public Withdrawal(long id, string brokerId, string clientId, string walletId, string transactionId, double amount,
             string assetSymbol, string comment, string integration, string txid, WithdrawalStatus status,
-            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress)
+            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress, string clientIp, string clientLang)
         {
             Id = id;
             BrokerId = brokerId;
@@ -28,12 +28,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
             RetriesCount = retriesCount;
             EventDate = eventDate;
             ToAddress = toAddress;
+            ClientIp = clientIp;
+            ClientLang = clientLang;
         }
 
         public Withdrawal(Withdrawal withdrawal) : this(withdrawal.Id, withdrawal.BrokerId, withdrawal.ClientId, withdrawal.WalletId,
             withdrawal.TransactionId, withdrawal.Amount, withdrawal.AssetSymbol, withdrawal.Comment,
             withdrawal.Integration, withdrawal.Txid, withdrawal.Status, withdrawal.MatchingEngineId, withdrawal.LastError,
-            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress)
+            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress, withdrawal.ClientIp, withdrawal.ClientLang)
         {
         }
 
@@ -72,5 +74,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         [DataMember(Order = 15)] public DateTime EventDate { get; set; }
 
         [DataMember(Order = 16)] public string ToAddress { get; set; }
+        
+        [DataMember(Order = 17)] public string ClientLang { get; set; }
+        [DataMember(Order = 18)] public string ClientIp { get; set; }
+        [DataMember(Order = 19)] public DateTime NotificationTime { get; set; }
     }
 }

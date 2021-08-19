@@ -181,7 +181,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     Integration = "BitGo",
                     Status = WithdrawalStatus.New,
                     EventDate = DateTime.UtcNow,
-                    ToAddress = request.ToAddress
+                    ToAddress = request.ToAddress,
+                    ClientIp = request.ClientIp,
+                    ClientLang = request.ClientLang
                 };
                 await ctx.InsertAsync(withdrawalEntity);
 
@@ -218,7 +220,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 ToAddress = withdrawalEntity.ToAddress
             };
 
-            if (withdrawalEntity.Status == WithdrawalStatus.New ||
+            if (withdrawalEntity.Status == WithdrawalStatus.Pending ||
                 withdrawalEntity.Status == WithdrawalStatus.ErrorInMe || 
                 withdrawalEntity.Status == WithdrawalStatus.Stopped)
             {

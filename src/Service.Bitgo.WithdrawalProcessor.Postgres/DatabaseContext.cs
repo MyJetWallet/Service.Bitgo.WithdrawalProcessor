@@ -67,6 +67,10 @@ namespace Service.Bitgo.WithdrawalProcessor.Postgres
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.RetriesCount).HasDefaultValue(0);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.EventDate);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.ToAddress).HasMaxLength(512);
+            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.ClientIp).HasMaxLength(64).IsRequired(false);
+            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.ClientLang).HasMaxLength(64).IsRequired(false);
+            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.NotificationTime);
+
         
             modelBuilder.Entity<WithdrawalEntity>().HasIndex(e => e.Status);
             modelBuilder.Entity<WithdrawalEntity>().HasIndex(e => e.TransactionId).IsUnique();

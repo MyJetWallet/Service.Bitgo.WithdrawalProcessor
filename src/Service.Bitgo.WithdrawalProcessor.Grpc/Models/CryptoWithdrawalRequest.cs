@@ -12,5 +12,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Grpc.Models
         [DataMember(Order = 5)] public string AssetSymbol { get; set; }
         [DataMember(Order = 6)] public double Amount { get; set; }
         [DataMember(Order = 7)] public string ToAddress { get; set; }
+        [DataMember(Order = 8)] public string ClientLang { get; set; }
+        [DataMember(Order = 9)] public string ClientIp { get; set; }
     }
 }

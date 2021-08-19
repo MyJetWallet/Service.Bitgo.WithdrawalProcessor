@@ -24,7 +24,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Client
 
         public static void RegisterWithdrawalVerificationPublisher(this ContainerBuilder builder, MyServiceBusTcpClient serviceBusClient)
         {
-            builder.RegisterMyServiceBusPublisher<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, false);
+            builder.RegisterMyServiceBusPublisher<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, true);
         }
     }
 }
