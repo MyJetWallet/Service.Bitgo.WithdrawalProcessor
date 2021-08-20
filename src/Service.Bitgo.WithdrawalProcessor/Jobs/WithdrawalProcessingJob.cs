@@ -113,10 +113,18 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 var withdrawals = await context.Withdrawals.Where(e =>
                     e.Status == WithdrawalStatus.New).ToListAsync();
 
+                var whitelist = Program.ReloadedSettings(e => e.WhitelistedAddresses).Invoke().Split(';').ToList();
+                
                 foreach (var withdrawal in withdrawals)
                 {
                     try
                     {
+                        if (whitelist.Contains(withdrawal.ToAddress))
+                        {
+                            withdrawal.Status = WithdrawalStatus.Pending;
+                            continue;
+                        }
+                        
                         var response = await _verificationService.SendWithdrawalVerificationCodeAsync(
                             new SendWithdrawalVerificationCodeRequest
                             {

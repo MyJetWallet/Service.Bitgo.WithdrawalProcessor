@@ -44,5 +44,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Settings
         [YamlProperty("BitgoWithdrawalProcessor.VerificationCodesGrpcUrl")]
         public string VerificationCodesGrpcUrl { get; set; }
         
+        [YamlProperty("BitgoWithdrawalProcessor.WhitelistedAddresses")]
+        public string WhitelistedAddresses { get; set; }
     }
 }
