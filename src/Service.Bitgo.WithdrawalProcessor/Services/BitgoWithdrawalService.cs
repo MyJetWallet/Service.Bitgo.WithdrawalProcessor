@@ -33,6 +33,48 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             _cryptoWithdrawalService = cryptoWithdrawalService;
         }
 
+        
+        public async Task<GetWithdrawalResponse> GetWithdrawalById(GetWithdrawalRequest request)
+        {
+            request.AddToActivityAsJsonTag("request-data");
+            _logger.LogInformation("Receive GetWithdrawal request: {JsonRequest}", JsonConvert.SerializeObject(request));
+            
+            try
+            {
+                await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
+                var withdrawal = await context.Withdrawals
+                    .Where(e => e.Id == request.Id)
+                    .FirstOrDefaultAsync();
+
+                if (withdrawal == null)
+                {
+                    return new GetWithdrawalResponse()
+                    {
+                        Success = false,
+                        ErrorMessage = $"Withdrawal with Id {request.Id} was not found"
+                    };
+                }
+
+                var response = new GetWithdrawalResponse
+                {
+                    Success = true,
+                    Withdrawal = withdrawal,
+                };
+
+                _logger.LogInformation("Return GetWithdrawal response for Id: {id}",
+                   withdrawal.Id);
+                return response;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception,
+                    "Cannot get GetWithdrawal Id: {Id}",
+                     request.Id);
+                return new GetWithdrawalResponse {Success = false, ErrorMessage = exception.Message};
+            }
+        }
+
+        
         public async Task<GetWithdrawalsResponse> GetWithdrawals(GetWithdrawalsRequest request)
         {
             request.AddToActivityAsJsonTag("request-data");
