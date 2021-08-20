@@ -10,7 +10,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         
         public Withdrawal(long id, string brokerId, string clientId, string walletId, string transactionId, double amount,
             string assetSymbol, string comment, string integration, string txid, WithdrawalStatus status,
-            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress, string clientIp, string clientLang)
+            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress, string clientIp, string clientLang, DateTime notificationTime)
         {
             Id = id;
             BrokerId = brokerId;
@@ -30,12 +30,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
             ToAddress = toAddress;
             ClientIp = clientIp;
             ClientLang = clientLang;
+            NotificationTime = notificationTime;
         }
 
         public Withdrawal(Withdrawal withdrawal) : this(withdrawal.Id, withdrawal.BrokerId, withdrawal.ClientId, withdrawal.WalletId,
             withdrawal.TransactionId, withdrawal.Amount, withdrawal.AssetSymbol, withdrawal.Comment,
             withdrawal.Integration, withdrawal.Txid, withdrawal.Status, withdrawal.MatchingEngineId, withdrawal.LastError,
-            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress, withdrawal.ClientIp, withdrawal.ClientLang)
+            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress, withdrawal.ClientIp, withdrawal.ClientLang, withdrawal.NotificationTime)
         {
         }
 

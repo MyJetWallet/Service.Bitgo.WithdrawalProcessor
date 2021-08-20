@@ -58,7 +58,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 var response = new GetWithdrawalResponse
                 {
                     Success = true,
-                    Withdrawal = withdrawal,
+                    Withdrawal = new Withdrawal(withdrawal),
                 };
 
                 _logger.LogInformation("Return GetWithdrawal response for Id: {id}",
