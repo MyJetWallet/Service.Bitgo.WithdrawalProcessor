@@ -63,7 +63,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 sw.Start();
 
                 var withdrawals = await context.Withdrawals
-                    .Where(e => e.Id > long.Parse(message.WithdrawalProcessId))
+                    .Where(e => e.Id == long.Parse(message.WithdrawalProcessId))
                     .Where(e => e.Status == WithdrawalStatus.ApprovalPending)
                     .ToListAsync();
 
