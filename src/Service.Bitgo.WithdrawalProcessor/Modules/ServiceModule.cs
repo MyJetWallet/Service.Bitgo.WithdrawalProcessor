@@ -67,8 +67,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Modules
             
             builder.RegisterSignalBitGoTransferSubscriber(serviceBusClient, "Bitgo-WithdrawalProcessor", TopicQueueType.Permanent);
             builder.BalanceHistoryOperationInfoPublisher(serviceBusClient);
-            builder.RegisterWithdrawalOperationHistoryPublisher(serviceBusClient);
-
+            builder.RegisterMyServiceBusPublisher<Withdrawal>(serviceBusClient, Withdrawal.TopicName, false);
             builder.RegisterVerificationCodesClient(Program.Settings.VerificationCodesGrpcUrl);
             
             builder

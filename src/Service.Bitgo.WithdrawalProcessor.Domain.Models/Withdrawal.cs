@@ -44,6 +44,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         {
         }
         
+        public const string TopicName = "jet-wallet-crypto-withdrawal-operation";
+        
         [DataMember(Order = 1)] public long Id { get; set; }
 
         [DataMember(Order = 2)] public string BrokerId { get; set; }

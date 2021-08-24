@@ -27,7 +27,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
         private readonly CryptoWithdrawalService _cryptoWithdrawalService;
         private readonly ILogger<WithdrawalProcessingJob> _logger;
         private readonly IWithdrawalVerificationService _verificationService;
-        private readonly IPublisher<WithdrawalOperationMessage> _balanceUpdateOperationInfoPublisher;
+        private readonly IPublisher<Withdrawal> _withdrawalPublisher;
         private readonly MyTaskTimer _timer;
 
         public WithdrawalProcessingJob(ILogger<WithdrawalProcessingJob> logger,
@@ -35,14 +35,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
             CryptoWithdrawalService cryptoWithdrawalService, 
             ISubscriber<WithdrawalVerifiedMessage> verificationSubscriber, 
             IWithdrawalVerificationService verificationService, 
-            IPublisher<WithdrawalOperationMessage> balanceUpdateOperationInfoPublisher)
+            IPublisher<Withdrawal> withdrawalPublisher)
         {
             verificationSubscriber.Subscribe(HandleVerifiedWithdrawals);
             _logger = logger;
             _dbContextOptionsBuilder = dbContextOptionsBuilder;
             _cryptoWithdrawalService = cryptoWithdrawalService;
             _verificationService = verificationService;
-            _balanceUpdateOperationInfoPublisher = balanceUpdateOperationInfoPublisher;
+            _withdrawalPublisher = withdrawalPublisher;
             _timer = new MyTaskTimer(typeof(WithdrawalProcessingJob),
                 TimeSpan.FromSeconds(Program.ReloadedSettings(e => e.WithdrawalsProcessingIntervalSec).Invoke()),
                 logger, DoTime);
@@ -86,6 +86,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
                         withdrawal.RetriesCount++;
                     }
+
+                    await _withdrawalPublisher.PublishAsync(withdrawal);
                 }
 
                 await context.UpdateAsync(withdrawals);
@@ -149,22 +151,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         {
                             withdrawal.Status = WithdrawalStatus.Pending;
                         }
-
-                        await _balanceUpdateOperationInfoPublisher.PublishAsync(
-                            new WithdrawalOperationMessage()
-                            {  
-                                OperationId = withdrawal.TransactionId,
-                                ClientId = withdrawal.ClientId,
-                                AssetId = withdrawal.AssetSymbol,
-                                WalletId = withdrawal.WalletId,
-                                BrokerId = withdrawal.BrokerId,
-                                OperationType = OperationTypes.Withdrawal,
-                                Status = OperationStatuses.InProgress,
-                                ToAddress = withdrawal.ToAddress,
-                                WithdrawalAssetId = withdrawal.AssetSymbol,
-                                WithdrawalAmount = (decimal)withdrawal.Amount,
-                                TimeStamp = DateTime.UtcNow
-                            });
+                        
+                        await _withdrawalPublisher.PublishAsync(withdrawal);
                     }
                     catch (Exception ex)
                     {
@@ -215,20 +203,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                             TimeSpan.FromMinutes(Program.Settings.WithdrawalExpirationTimeInMin))
                         {
                             withdrawal.Status = WithdrawalStatus.Cancelled;
-                            
-                            await _balanceUpdateOperationInfoPublisher.PublishAsync(
-                                new WithdrawalOperationMessage
-                                {
-                                    OperationId = withdrawal.TransactionId,
-                                    ClientId = withdrawal.ClientId,
-                                    AssetId = withdrawal.AssetSymbol,
-                                    WalletId = withdrawal.WalletId,
-                                    OperationType = OperationTypes.Withdrawal,
-                                    Status = OperationStatuses.Declined,
-                                    TimeStamp = DateTime.UtcNow
-                                });
                         }
-
+                        await _withdrawalPublisher.PublishAsync(withdrawal);
                     }
                     catch (Exception ex)
                     {
@@ -280,38 +256,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         await _cryptoWithdrawalService.ExecuteWithdrawalAsync(withdrawal);
                         if (withdrawal.Status != WithdrawalStatus.Success)
                         {
-                            if (withdrawal.RetriesCount >= 2)
+                            if (withdrawal.RetriesCount >=
+                                Program.ReloadedSettings(e => e.WithdrawalsRetriesLimit).Invoke())
                             {
                                 withdrawal.Status = WithdrawalStatus.Stopped;
-                                
-                                await _balanceUpdateOperationInfoPublisher.PublishAsync(
-                                    new WithdrawalOperationMessage
-                                    {
-                                        OperationId = withdrawal.TransactionId,
-                                        ClientId = withdrawal.ClientId,
-                                        AssetId = withdrawal.AssetSymbol,
-                                        WalletId = withdrawal.WalletId,
-                                        OperationType = OperationTypes.Withdrawal,
-                                        Status = OperationStatuses.Declined,
-                                        TimeStamp = DateTime.UtcNow
-                                    });
                             }
                         }
-                        else
-                        {
-                            await _balanceUpdateOperationInfoPublisher.PublishAsync(
-                                new WithdrawalOperationMessage
-                                {
-                                    OperationId = withdrawal.TransactionId,
-                                    ClientId = withdrawal.ClientId,
-                                    AssetId = withdrawal.AssetSymbol,
-                                    WalletId = withdrawal.WalletId,
-                                    OperationType = OperationTypes.Withdrawal,
-                                    Status = OperationStatuses.Completed,
-                                    TxId = withdrawal.Txid,
-                                    TimeStamp = DateTime.UtcNow
-                                });
-                        }
+                        await _withdrawalPublisher.PublishAsync(withdrawal);
                     }
                     catch (Exception ex)
                     {

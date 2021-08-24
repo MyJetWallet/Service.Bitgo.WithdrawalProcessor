@@ -313,6 +313,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
             withdrawalEntity.Status = WithdrawalStatus.Success;
             withdrawalEntity.Txid = txid;
+            withdrawalEntity.MatchingEngineId = withdrawalEntity.TransactionId;
         }
 
         private async Task<CryptoWithdrawalResponse> ChangeBalanceAsync(Withdrawal withdrawalEntity,

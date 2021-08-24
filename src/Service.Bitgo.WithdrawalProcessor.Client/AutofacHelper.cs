@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using MyJetWallet.Sdk.ServiceBus;
+using MyServiceBus.Abstractions;
 using MyServiceBus.TcpClient;
 using Service.Bitgo.WithdrawalProcessor.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Grpc;
@@ -25,6 +26,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Client
         public static void RegisterWithdrawalVerificationPublisher(this ContainerBuilder builder, MyServiceBusTcpClient serviceBusClient)
         {
             builder.RegisterMyServiceBusPublisher<WithdrawalVerifiedMessage>(serviceBusClient, WithdrawalVerifiedMessage.TopicName, true);
+        }
+        
+        public static void RegisterWithdrawalOperationSubscriber(this ContainerBuilder builder, MyServiceBusTcpClient serviceBusClient, string queue)
+        {
+            builder.RegisterMyServiceBusSubscriberBatch<Withdrawal>(serviceBusClient, Withdrawal.TopicName, queue,
+                TopicQueueType.Permanent);
         }
     }
 }
