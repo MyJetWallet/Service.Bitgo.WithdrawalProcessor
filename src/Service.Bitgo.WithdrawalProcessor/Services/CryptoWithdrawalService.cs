@@ -209,6 +209,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         }
         public async Task ExecuteWithdrawalAsync(WithdrawalEntity withdrawalEntity)
         {
+            if (withdrawalEntity.Status == WithdrawalStatus.New ||
+                withdrawalEntity.Status == WithdrawalStatus.ApprovalPending)
+            {
+                withdrawalEntity.Status = WithdrawalStatus.New;
+                return;
+            }
+
             var request = new CryptoWithdrawalRequest
             {
                 Amount = withdrawalEntity.Amount,
