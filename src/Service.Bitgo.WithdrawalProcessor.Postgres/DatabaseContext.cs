@@ -55,14 +55,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Postgres
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.BrokerId).HasMaxLength(128);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.ClientId).HasMaxLength(128);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.WalletId).HasMaxLength(128);
-            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.TransactionId).HasMaxLength(128);
+            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.TransactionId).HasMaxLength(256);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.Amount);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.AssetSymbol).HasMaxLength(64);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.Comment).HasMaxLength(512);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.Integration).HasMaxLength(64);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.Txid).HasMaxLength(256);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.Status).HasDefaultValue(WithdrawalStatus.New);
-            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.MatchingEngineId).HasMaxLength(64).IsRequired(false);
+            modelBuilder.Entity<WithdrawalEntity>().Property(e => e.MatchingEngineId).HasMaxLength(256).IsRequired(false);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.LastError).HasMaxLength(2048).IsRequired(false);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.RetriesCount).HasDefaultValue(0);
             modelBuilder.Entity<WithdrawalEntity>().Property(e => e.EventDate);

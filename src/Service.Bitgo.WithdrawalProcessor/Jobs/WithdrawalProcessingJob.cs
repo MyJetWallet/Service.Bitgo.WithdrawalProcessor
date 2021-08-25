@@ -147,7 +147,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                                 IpAddress = withdrawal.ClientIp,
                             });
                             
-                        if (!response.IsSuccess)
+                        if (!response.IsSuccess && !response.ErrorMessage.Contains("Cannot send again code"))
                             throw new Exception(
                                 $"Failed to send verification email. Error message: {response.ErrorMessage}");
 

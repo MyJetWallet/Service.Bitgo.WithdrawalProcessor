@@ -35,6 +35,7 @@ namespace Service.Bitgo.WithdrawalProcessor
             DatabaseContext.LoggerFactory = Program.LogFactory;
             services.AddDatabase(DatabaseContext.Schema, Program.Settings.PostgresConnectionString,
                 o => new DatabaseContext(o));
+            DatabaseContext.LoggerFactory = null;
 
             services.AddMyTelemetry("SP-", Program.Settings.ZipkinUrl);
         }
