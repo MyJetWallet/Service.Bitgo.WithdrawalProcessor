@@ -79,6 +79,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     try
                     {
                         withdrawal.Status = WithdrawalStatus.Pending;
+                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -86,8 +87,6 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
                         withdrawal.RetriesCount++;
                     }
-
-                    await _withdrawalPublisher.PublishAsync(withdrawal);
                 }
 
                 await context.UpdateAsync(withdrawals);
@@ -152,7 +151,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                             withdrawal.Status = WithdrawalStatus.Pending;
                         }
                         
-                        await _withdrawalPublisher.PublishAsync(withdrawal);
+                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -204,7 +203,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         {
                             withdrawal.Status = WithdrawalStatus.Cancelled;
                         }
-                        await _withdrawalPublisher.PublishAsync(withdrawal);
+                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -262,7 +261,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                                 withdrawal.Status = WithdrawalStatus.Stopped;
                             }
                         }
-                        await _withdrawalPublisher.PublishAsync(withdrawal);
+                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                     }
                     catch (Exception ex)
                     {
