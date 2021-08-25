@@ -34,7 +34,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         }
 
         
-        public async Task<GetWithdrawalResponse> GetWithdrawalById(GetWithdrawalRequest request)
+        public async Task<GetWithdrawalResponse> GetWithdrawalByOperationId(GetWithdrawalRequest request)
         {
             request.AddToActivityAsJsonTag("request-data");
             _logger.LogInformation("Receive GetWithdrawal request: {JsonRequest}", JsonConvert.SerializeObject(request));
@@ -43,7 +43,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
             {
                 await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
                 var withdrawal = await context.Withdrawals
-                    .Where(e => e.Id == request.Id)
+                    .Where(e => e.TransactionId == request.OperationId)
                     .FirstOrDefaultAsync();
 
                 if (withdrawal == null)
@@ -51,7 +51,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     return new GetWithdrawalResponse()
                     {
                         Success = false,
-                        ErrorMessage = $"Withdrawal with Id {request.Id} was not found"
+                        ErrorMessage = $"Withdrawal with Id {request.OperationId} was not found"
                     };
                 }
 
@@ -62,14 +62,14 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 };
 
                 _logger.LogInformation("Return GetWithdrawal response for Id: {id}",
-                   withdrawal.Id);
+                   withdrawal.TransactionId);
                 return response;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception,
                     "Cannot get GetWithdrawal Id: {Id}",
-                     request.Id);
+                     request.OperationId);
                 return new GetWithdrawalResponse {Success = false, ErrorMessage = exception.Message};
             }
         }

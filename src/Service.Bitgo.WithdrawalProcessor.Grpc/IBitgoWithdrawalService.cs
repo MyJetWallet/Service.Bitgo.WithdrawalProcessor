@@ -17,6 +17,6 @@ namespace Service.Bitgo.WithdrawalProcessor.Grpc
         Task<CancelWithdrawalResponse> CancelWithdrawal(CancelWithdrawalRequest request);
 
         [OperationContract]
-        Task<GetWithdrawalResponse> GetWithdrawalById(GetWithdrawalRequest request);
+        Task<GetWithdrawalResponse> GetWithdrawalByOperationId(GetWithdrawalRequest request);
     }
 }
