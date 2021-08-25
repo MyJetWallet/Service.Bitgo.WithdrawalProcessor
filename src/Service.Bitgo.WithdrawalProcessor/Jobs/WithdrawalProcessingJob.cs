@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.Sdk.Service;
 using MyJetWallet.Sdk.Service.Tools;
+using Newtonsoft.Json;
 using Service.BalanceHistory.Domain.Models;
 using Service.BalanceHistory.Grpc.Models;
 using Service.Bitgo.WithdrawalProcessor.Domain.Models;
@@ -80,6 +81,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     {
                         withdrawal.Status = WithdrawalStatus.Pending;
                         await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -95,12 +97,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
                 sw.Stop();
                 if (withdrawals.Count > 0)
-                    _logger.LogInformation("Handled {countTrade} withdrawals. Time: {timeRangeText}", withdrawals.Count,
+                    _logger.LogInformation("Handled {countTrade} approved withdrawals. Time: {timeRangeText}", withdrawals.Count,
                         sw.Elapsed.ToString());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cannot Handle withdrawals");
+                _logger.LogError(ex, "Cannot Handle approved withdrawals");
                 ex.FailActivity();
 
                 throw;
@@ -110,7 +112,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 TimeSpan.FromSeconds(Program.ReloadedSettings(e => e.WithdrawalsProcessingIntervalSec).Invoke()));
         }
         private async Task HandleNewWithdrawals(){
-        using var activity = MyTelemetry.StartActivity("Handle withdrawals");
+        using var activity = MyTelemetry.StartActivity("Handle new withdrawals");
             try
             {
                 await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
@@ -152,6 +154,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                         }
                         
                         await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -167,12 +170,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
                 sw.Stop();
                 if (withdrawals.Count > 0)
-                    _logger.LogInformation("Handled {countTrade} withdrawals. Time: {timeRangeText}", withdrawals.Count,
+                    _logger.LogInformation("Handled {countTrade} new withdrawals. Time: {timeRangeText}", withdrawals.Count,
                         sw.Elapsed.ToString());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cannot Handle withdrawals");
+                _logger.LogError(ex, "Cannot Handle new withdrawals");
                 ex.FailActivity();
 
                 throw;
@@ -183,7 +186,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
         }
         
         private async Task HandleExpiredWithdrawals(){
-        using var activity = MyTelemetry.StartActivity("Handle withdrawals");
+        using var activity = MyTelemetry.StartActivity("Handle expired withdrawals");
             try
             {
                 await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
@@ -202,8 +205,9 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                             TimeSpan.FromMinutes(Program.Settings.WithdrawalExpirationTimeInMin))
                         {
                             withdrawal.Status = WithdrawalStatus.Cancelled;
+                            await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+                            _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
                         }
-                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -219,12 +223,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
                 sw.Stop();
                 if (withdrawals.Count > 0)
-                    _logger.LogInformation("Handled {countTrade} withdrawals. Time: {timeRangeText}", withdrawals.Count,
+                    _logger.LogInformation("Handled {countTrade} expired withdrawals. Time: {timeRangeText}", withdrawals.Count,
                         sw.Elapsed.ToString());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cannot Handle withdrawals");
+                _logger.LogError(ex, "Cannot Handle expired withdrawals");
                 ex.FailActivity();
 
                 throw;
@@ -236,7 +240,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
         private async Task HandlePendingWithdrawals()
         {
-            using var activity = MyTelemetry.StartActivity("Handle withdrawals");
+            using var activity = MyTelemetry.StartActivity("Handle pending withdrawals");
             try
             {
                 await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
@@ -262,6 +266,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                             }
                         }
                         await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
                     }
                     catch (Exception ex)
                     {
@@ -277,12 +282,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
                 sw.Stop();
                 if (withdrawals.Count > 0)
-                    _logger.LogInformation("Handled {countTrade} withdrawals. Time: {timeRangeText}", withdrawals.Count,
+                    _logger.LogInformation("Handled {countTrade} pending withdrawals. Time: {timeRangeText}", withdrawals.Count,
                         sw.Elapsed.ToString());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cannot Handle withdrawals");
+                _logger.LogError(ex, "Cannot Handle pending withdrawals");
                 ex.FailActivity();
 
                 throw;
