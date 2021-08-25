@@ -149,16 +149,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                     };
                 }
 
-                try
-                {
-                    await _cryptoWithdrawalService.ExecuteWithdrawalAsync(withdrawal);
-                }
-                catch (Exception ex)
-                {
-                    withdrawal.Status = WithdrawalStatus.Error;
-                    withdrawal.LastError = ex.Message;
-                }
 
+                await _cryptoWithdrawalService.RetryWithdrawalAsync(withdrawal);
                 await context.UpdateAsync(withdrawal);
 
                 _logger.LogInformation("Handled withdrawal manual retry: {withdrawalId}", request.WithdrawalId);
@@ -219,6 +211,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 }
 
                 withdrawal.Status = WithdrawalStatus.Cancelled;
+                withdrawal.LastError = "Manual cancel";
 
                 await context.UpdateAsync(new List<WithdrawalEntity> {withdrawal});
 

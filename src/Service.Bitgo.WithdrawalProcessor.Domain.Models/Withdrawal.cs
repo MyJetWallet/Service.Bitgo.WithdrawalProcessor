@@ -10,7 +10,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         
         public Withdrawal(long id, string brokerId, string clientId, string walletId, string transactionId, double amount,
             string assetSymbol, string comment, string integration, string txid, WithdrawalStatus status,
-            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress, string clientIp, string clientLang, DateTime notificationTime)
+            string matchingEngineId, string lastError, int retriesCount, DateTime eventDate, string toAddress, string clientIp, string clientLang, DateTime notificationTime, WithdrawalWorkflowState workflowState)
         {
             Id = id;
             BrokerId = brokerId;
@@ -31,12 +31,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
             ClientIp = clientIp;
             ClientLang = clientLang;
             NotificationTime = notificationTime;
+            WorkflowState = workflowState;
         }
 
         public Withdrawal(Withdrawal withdrawal) : this(withdrawal.Id, withdrawal.BrokerId, withdrawal.ClientId, withdrawal.WalletId,
             withdrawal.TransactionId, withdrawal.Amount, withdrawal.AssetSymbol, withdrawal.Comment,
             withdrawal.Integration, withdrawal.Txid, withdrawal.Status, withdrawal.MatchingEngineId, withdrawal.LastError,
-            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress, withdrawal.ClientIp, withdrawal.ClientLang, withdrawal.NotificationTime)
+            withdrawal.RetriesCount, withdrawal.EventDate, withdrawal.ToAddress, withdrawal.ClientIp, withdrawal.ClientLang, withdrawal.NotificationTime, withdrawal.WorkflowState)
         {
         }
 
@@ -81,5 +82,6 @@ namespace Service.Bitgo.WithdrawalProcessor.Domain.Models
         [DataMember(Order = 17)] public string ClientLang { get; set; }
         [DataMember(Order = 18)] public string ClientIp { get; set; }
         [DataMember(Order = 19)] public DateTime NotificationTime { get; set; }
+        [DataMember(Order = 20)] public WithdrawalWorkflowState WorkflowState { get; set; }
     }
 }

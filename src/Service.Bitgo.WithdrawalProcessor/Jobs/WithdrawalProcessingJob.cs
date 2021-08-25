@@ -14,6 +14,7 @@ using Service.BalanceHistory.Domain.Models;
 using Service.BalanceHistory.Grpc.Models;
 using Service.Bitgo.WithdrawalProcessor.Domain.Models;
 using Service.Bitgo.WithdrawalProcessor.Postgres;
+using Service.Bitgo.WithdrawalProcessor.Postgres.Models;
 using Service.Bitgo.WithdrawalProcessor.Services;
 using Service.VerificationCodes.Grpc;
 using Service.VerificationCodes.Grpc.Models;
@@ -80,14 +81,11 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                     try
                     {
                         withdrawal.Status = WithdrawalStatus.Pending;
-                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
-                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
+                        await PublishSuccess(withdrawal);
                     }
                     catch (Exception ex)
                     {
-                        withdrawal.Status = WithdrawalStatus.Error;
-                        withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
-                        withdrawal.RetriesCount++;
+                        await HandleError(withdrawal, ex);
                     }
                 }
 
@@ -121,7 +119,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 sw.Start();
 
                 var withdrawals = await context.Withdrawals.Where(e =>
-                    e.Status == WithdrawalStatus.New).ToListAsync();
+                    e.Status == WithdrawalStatus.New
+                    && e.WorkflowState != WithdrawalWorkflowState.Failed).ToListAsync();
 
                 var whitelist = Program.ReloadedSettings(e => e.WhitelistedAddresses).Invoke().Split(';').ToList();
                 
@@ -129,38 +128,36 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 {
                     try
                     {
-                        if (!whitelist.Contains(withdrawal.ToAddress))
-                        {
-                            var response = await _verificationService.SendWithdrawalVerificationCodeAsync(
-                                new SendWithdrawalVerificationCodeRequest
-                                {
-                                    ClientId = withdrawal.ClientId,
-                                    OperationId = withdrawal.Id.ToString(),
-                                    Lang = withdrawal.ClientLang,
-                                    AssetSymbol = withdrawal.AssetSymbol,
-                                    Amount = withdrawal.Amount.ToString(CultureInfo.InvariantCulture),
-                                    DestinationAddress = withdrawal.ToAddress,
-                                    IpAddress = withdrawal.ClientIp,
-                                });
-                            if (response.IsSuccess)
-                            {
-                                withdrawal.Status = WithdrawalStatus.ApprovalPending;
-                                withdrawal.NotificationTime = DateTime.UtcNow;
-                            }
-                        }
-                        else
+                        if (whitelist.Contains(withdrawal.ToAddress))
                         {
                             withdrawal.Status = WithdrawalStatus.Pending;
+                            await PublishSuccess(withdrawal);
+                            continue;
                         }
-                        
-                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
-                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
+
+                        var response = await _verificationService.SendWithdrawalVerificationCodeAsync(
+                            new SendWithdrawalVerificationCodeRequest
+                            {
+                                ClientId = withdrawal.ClientId,
+                                OperationId = withdrawal.Id.ToString(),
+                                Lang = withdrawal.ClientLang,
+                                AssetSymbol = withdrawal.AssetSymbol,
+                                Amount = withdrawal.Amount.ToString(CultureInfo.InvariantCulture),
+                                DestinationAddress = withdrawal.ToAddress,
+                                IpAddress = withdrawal.ClientIp,
+                            });
+                            
+                        if (!response.IsSuccess)
+                            throw new Exception(
+                                $"Failed to send verification email. Error message: {response.ErrorMessage}");
+
+                        withdrawal.Status = WithdrawalStatus.ApprovalPending;
+                        withdrawal.NotificationTime = DateTime.UtcNow;
+                        await PublishSuccess(withdrawal);
                     }
                     catch (Exception ex)
                     {
-                        withdrawal.Status = WithdrawalStatus.Error;
-                        withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
-                        withdrawal.RetriesCount++;
+                        await HandleError(withdrawal, ex);
                     }
                 }
 
@@ -205,15 +202,13 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                             TimeSpan.FromMinutes(Program.Settings.WithdrawalExpirationTimeInMin))
                         {
                             withdrawal.Status = WithdrawalStatus.Cancelled;
-                            await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
-                            _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
+                            withdrawal.LastError = "Expired";
+                            await PublishSuccess(withdrawal);
                         }
                     }
                     catch (Exception ex)
                     {
-                        withdrawal.Status = WithdrawalStatus.Error;
-                        withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
-                        withdrawal.RetriesCount++;
+                        await HandleError(withdrawal, ex);
                     }
                 }
 
@@ -249,30 +244,19 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
                 sw.Start();
 
                 var withdrawals = await context.Withdrawals.Where(e =>
-                    e.Status == WithdrawalStatus.Pending || e.Status == WithdrawalStatus.ErrorInMe ||
-                    e.Status == WithdrawalStatus.Error).ToListAsync();
+                    e.Status == WithdrawalStatus.Pending 
+                    && e.WorkflowState != WithdrawalWorkflowState.Failed).ToListAsync();
 
                 foreach (var withdrawal in withdrawals)
                 {
                     try
                     {
                         await _cryptoWithdrawalService.ExecuteWithdrawalAsync(withdrawal);
-                        if (withdrawal.Status != WithdrawalStatus.Success)
-                        {
-                            if (withdrawal.RetriesCount >=
-                                Program.ReloadedSettings(e => e.WithdrawalsRetriesLimit).Invoke())
-                            {
-                                withdrawal.Status = WithdrawalStatus.Stopped;
-                            }
-                        }
-                        await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
-                        _logger.LogInformation("Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}", withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
+                        await PublishSuccess(withdrawal);
                     }
                     catch (Exception ex)
                     {
-                        withdrawal.Status = WithdrawalStatus.Error;
-                        withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
-                        withdrawal.RetriesCount++;
+                        await HandleError(withdrawal, ex);
                     }
                 }
 
@@ -289,12 +273,59 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
             {
                 _logger.LogError(ex, "Cannot Handle pending withdrawals");
                 ex.FailActivity();
-
                 throw;
             }
 
             _timer.ChangeInterval(
                 TimeSpan.FromSeconds(Program.ReloadedSettings(e => e.WithdrawalsProcessingIntervalSec).Invoke()));
+        }
+
+        private async Task HandleError(WithdrawalEntity withdrawal, Exception ex)
+        {
+            ex.FailActivity();
+            withdrawal.WorkflowState = WithdrawalWorkflowState.Retrying;
+            withdrawal.LastError = ex.Message.Length > 2048 ? ex.Message.Substring(0, 2048) : ex.Message;
+            withdrawal.RetriesCount++;
+            if (withdrawal.RetriesCount >= Program.Settings.WithdrawalsRetriesLimit)
+            {
+                withdrawal.WorkflowState = WithdrawalWorkflowState.Failed;
+            }
+            _logger.LogError(ex, "Withdrawal with Operation ID {operationId} changed workflow state to {status}. Operation: {operationJson}",
+                withdrawal.TransactionId, withdrawal.WorkflowState, JsonConvert.SerializeObject(withdrawal));
+            try
+            {
+                await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Can not publish error operation status {operationJson}", JsonConvert.SerializeObject(withdrawal));
+            }
+        }
+
+        private async Task PublishSuccess(WithdrawalEntity withdrawal)
+        {
+            var retriesCount = withdrawal.RetriesCount;
+            var lastError = withdrawal.LastError;
+            var state = withdrawal.WorkflowState;
+            try
+            {
+                await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
+
+                withdrawal.RetriesCount = 0;
+                withdrawal.LastError = null;
+                withdrawal.WorkflowState = WithdrawalWorkflowState.OK;
+                
+                _logger.LogInformation(
+                    "Withdrawal with Operation ID {operationId} is changed to status {status}. Operation: {operationJson}",
+                    withdrawal.TransactionId, withdrawal.Status, JsonConvert.SerializeObject(withdrawal));
+            }
+            catch (Exception e)
+            {
+                withdrawal.RetriesCount = retriesCount;
+                withdrawal.LastError = lastError;
+                withdrawal.WorkflowState = state;
+                throw;
+            }
         }
 
         public void Start()

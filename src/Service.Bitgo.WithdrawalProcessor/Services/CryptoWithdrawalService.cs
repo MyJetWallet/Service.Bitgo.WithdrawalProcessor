@@ -207,15 +207,16 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 };
             }
         }
+
+        public Task RetryWithdrawalAsync(WithdrawalEntity withdrawalEntity)
+        {
+            withdrawalEntity.WorkflowState = WithdrawalWorkflowState.Retrying;
+            _logger.LogInformation("Manual retry withdrawal with Operation Id {operationId} and status {status}", withdrawalEntity.TransactionId, withdrawalEntity.Status);
+            return Task.CompletedTask;
+        }
+
         public async Task ExecuteWithdrawalAsync(WithdrawalEntity withdrawalEntity)
         {
-            if (withdrawalEntity.Status == WithdrawalStatus.New ||
-                withdrawalEntity.Status == WithdrawalStatus.ApprovalPending)
-            {
-                withdrawalEntity.Status = WithdrawalStatus.New;
-                return;
-            }
-
             var request = new CryptoWithdrawalRequest
             {
                 Amount = withdrawalEntity.Amount,
@@ -227,48 +228,17 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
                 ToAddress = withdrawalEntity.ToAddress
             };
 
-            if (withdrawalEntity.Status == WithdrawalStatus.Pending ||
-                withdrawalEntity.Status == WithdrawalStatus.ErrorInMe || 
-                withdrawalEntity.Status == WithdrawalStatus.Stopped)
+            var executeResult = await ChangeBalanceAsync(withdrawalEntity, request);
+            if (executeResult != null)
             {
-                try
-                {
-                    var executeResult = await ChangeBalanceAsync(withdrawalEntity, request);
-                    if (executeResult != null)
-                    {
-                        _logger.LogError(
-                            $"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
-                        withdrawalEntity.Status = WithdrawalStatus.ErrorInMe;
-                        withdrawalEntity.LastError = executeResult.Error?.Message;
-                        withdrawalEntity.RetriesCount++;
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        $"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {ex.Message}");
-                    withdrawalEntity.Status = WithdrawalStatus.ErrorInMe;
-                    withdrawalEntity.LastError = ex.Message;
-                    withdrawalEntity.RetriesCount++;
-                    return;
-                }
+                throw new Exception($"[CryptoWithdrawalRequest] Cannot execute withdrawal in ME: {JsonConvert.SerializeObject(executeResult)}");
             }
 
-            var (coin, bitgoWallet) =
-                _assetMapper.AssetToBitgoCoinAndWallet(withdrawalEntity.BrokerId, withdrawalEntity.AssetSymbol);
+            var (coin, bitgoWallet) = _assetMapper.AssetToBitgoCoinAndWallet(withdrawalEntity.BrokerId, withdrawalEntity.AssetSymbol);
 
             if (string.IsNullOrEmpty(coin) || string.IsNullOrEmpty(bitgoWallet))
             {
-                _logger.LogInformation(
-                    $"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {withdrawalEntity.AssetSymbol}, broker {withdrawalEntity.BrokerId}");
-
-                withdrawalEntity.Status = WithdrawalStatus.Error;
-                withdrawalEntity.LastError =
-                    $"Cannot found bitgo coin association for asset {withdrawalEntity.AssetSymbol}, broker {withdrawalEntity.BrokerId}+";
-                withdrawalEntity.RetriesCount++;
-                
-                return;
+                throw new Exception($"[CryptoWithdrawalRequest] Cannot found bitgo coin association for asset {withdrawalEntity.AssetSymbol}, broker {withdrawalEntity.BrokerId}");
             }
 
             var coinAmount = _assetMapper.ConvertAmountToBitgo(coin, withdrawalEntity.Amount);
@@ -292,31 +262,10 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
             if (transferResult.Error != null)
             {
-                _logger.LogError(
-                    "[CryptoWithdrawalRequest] Cannot execute withdrawal in BitGo ({operationIdText}): {resultText}, request: {requestText}",
-                    withdrawalEntity.TransactionId,
-                    JsonConvert.SerializeObject(transferResult),
-                    JsonConvert.SerializeObject(request));
-
-                Activity.Current?.SetStatus(Status.Error);
-
-                withdrawalEntity.Status = WithdrawalStatus.Error;
-                withdrawalEntity.LastError = transferResult.Error.Message;
-                withdrawalEntity.RetriesCount++;
-
-                return;
+                throw new Exception($"[CryptoWithdrawalRequest] Cannot execute withdrawal in BitGo ({withdrawalEntity.TransactionId}): {JsonConvert.SerializeObject(transferResult)}, request: {JsonConvert.SerializeObject(request)}");
             }
 
             var txid = transferResult.Result?.Txid ?? transferResult.DuplicateTransaction?.TxId;
-
-            await _balanceUpdateOperationInfoPublisher.PublishAsync(
-                new WalletBalanceUpdateOperationInfo
-                {
-                    OperationId = withdrawalEntity.TransactionId,
-                    RawData = JsonConvert.SerializeObject(transferResult),
-                    Status = TransactionStatus.Pending,
-                    TxId = txid
-                });
 
             withdrawalEntity.Status = WithdrawalStatus.Success;
             withdrawalEntity.Txid = txid;
