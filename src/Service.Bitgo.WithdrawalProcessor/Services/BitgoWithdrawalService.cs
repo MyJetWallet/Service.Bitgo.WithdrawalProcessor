@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNetCoreDecorators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MyJetWallet.Sdk.Service;
@@ -23,14 +24,16 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
         private readonly DbContextOptionsBuilder<DatabaseContext> _dbContextOptionsBuilder;
         private readonly CryptoWithdrawalService _cryptoWithdrawalService;
         private readonly ILogger<BitgoWithdrawalService> _logger;
+        private readonly IPublisher<Withdrawal> _withdrawalPublisher;
 
         public BitgoWithdrawalService(ILogger<BitgoWithdrawalService> logger,
             DbContextOptionsBuilder<DatabaseContext> dbContextOptionsBuilder,
-            CryptoWithdrawalService cryptoWithdrawalService)
+            CryptoWithdrawalService cryptoWithdrawalService, IPublisher<Withdrawal> withdrawalPublisher)
         {
             _logger = logger;
             _dbContextOptionsBuilder = dbContextOptionsBuilder;
             _cryptoWithdrawalService = cryptoWithdrawalService;
+            _withdrawalPublisher = withdrawalPublisher;
         }
 
         
@@ -212,7 +215,8 @@ namespace Service.Bitgo.WithdrawalProcessor.Services
 
                 withdrawal.Status = WithdrawalStatus.Cancelled;
                 withdrawal.LastError = "Manual cancel";
-
+                
+                await _withdrawalPublisher.PublishAsync(new Withdrawal(withdrawal));
                 await context.UpdateAsync(new List<WithdrawalEntity> {withdrawal});
 
                 _logger.LogInformation("Handled withdrawal manual cancel: {withdrawalId}", request.WithdrawalId);

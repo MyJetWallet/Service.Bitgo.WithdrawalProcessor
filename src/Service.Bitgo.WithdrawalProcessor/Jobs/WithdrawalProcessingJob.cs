@@ -183,7 +183,7 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
         }
         
         private async Task HandleExpiredWithdrawals(){
-        using var activity = MyTelemetry.StartActivity("Handle expired withdrawals");
+        using var activity = MyTelemetry.StartActivity("Handle approval pending withdrawals");
             try
             {
                 await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
@@ -218,12 +218,12 @@ namespace Service.Bitgo.WithdrawalProcessor.Jobs
 
                 sw.Stop();
                 if (withdrawals.Count > 0)
-                    _logger.LogInformation("Handled {countTrade} expired withdrawals. Time: {timeRangeText}", withdrawals.Count,
+                    _logger.LogInformation("Handled {countTrade} approval pending withdrawals. Time: {timeRangeText}", withdrawals.Count,
                         sw.Elapsed.ToString());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cannot Handle expired withdrawals");
+                _logger.LogError(ex, "Cannot Handle approval pending withdrawals");
                 ex.FailActivity();
 
                 throw;
