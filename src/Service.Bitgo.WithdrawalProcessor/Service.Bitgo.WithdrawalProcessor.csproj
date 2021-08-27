@@ -17,13 +17,13 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-    <PackageReference Include="MyJetWallet.BitGo.Settings" Version="1.0.7" />
+    <PackageReference Include="MyJetWallet.BitGo.Settings" Version="1.0.11" />
     <PackageReference Include="MyJetWallet.Domain" Version="1.0.31" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcMetrics" Version="2.0.0" />
     <PackageReference Include="MyJetWallet.Sdk.GrpcSchema" Version="1.0.6" />
     <PackageReference Include="MyJetWallet.Sdk.Service" Version="1.5.5" />
     <PackageReference Include="MyJetWallet.Sdk.ServiceBus" Version="1.0.3" />
-    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="2.0.10" />
+    <PackageReference Include="MyJetWallet.Service.BalanceHistory.Client" Version="2.1.2" />
     <PackageReference Include="MyJetWallet.Service.BitGo.SignTransaction.Client" Version="1.1.0" />
     <PackageReference Include="MyJetWallet.Service.Bitgo.Webhooks.Client" Version="1.0.0" />
     <PackageReference Include="MyJetWallet.Service.VerificationCodes.Client" Version="1.2.4" />
